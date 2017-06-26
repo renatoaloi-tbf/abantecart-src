@@ -5,7 +5,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright © 2011-2016 Belavier Commerce LLC
+  Copyright © 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   License details is bundled with this package in the file LICENSE.txt.
@@ -170,7 +170,7 @@ class AListing{
 		if (!$this->custom_block_id){
 			return array ();
 		}
-		$custom_block_id = $this->custom_block_id;
+		$custom_block_id = (int)$this->custom_block_id;
 		$cache_key = 'blocks.custom.' . $custom_block_id;
 		$output = $this->cache->pull($cache_key);
 		if ($output !== false){
@@ -178,7 +178,7 @@ class AListing{
 		}
 		$result = $this->db->query("SELECT *
 									FROM `" . $this->db->table('custom_lists') . "`
-									WHERE custom_block_id = '" . $this->custom_block_id . "'
+									WHERE custom_block_id = '" . $custom_block_id . "'
 									ORDER BY sort_order");
 		$output = $result->rows;
 		$this->cache->push($cache_key, $output);
@@ -223,7 +223,7 @@ class AListing{
 			$args['parent_id'] = is_null($args['parent_id']) ? 0 : $args['parent_id'];
 			$output = array ($args['parent_id'], $args['limit']);
 		} elseif ($model == 'catalog/manufacturer' && $method == 'getManufacturers'){
-			$output = array ('limit' => $args['limit']);
+			$output = array( array ('limit' => $args['limit']) );
 		} elseif ($model == 'catalog/product' && $method == 'getPopularProducts'){
 			$output = array ('limit' => $args['limit']);
 		} elseif ($model == 'catalog/product' && $method == 'getProductSpecials'){
@@ -235,7 +235,6 @@ class AListing{
 		} elseif ($model == 'catalog/product' && $method == 'getLatestProducts'){
 			$output = array ($args['limit']);
 		}
-
 		return $output;
 	}
 }

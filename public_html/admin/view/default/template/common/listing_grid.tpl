@@ -6,22 +6,19 @@
 		<?php if ($data['multiselect'] == 'true' && !$data['multiselect_noselectbox']) { ?>
 		<div class="multiactions <?php echo $data['multiaction_class']; ?>" id="<?php echo $data['table_id'] ?>_multiactions" align="right">
 			<select id="<?php echo $data['table_id'] ?>_selected_action" name="<?php echo $data['table_id'] ?>_action">
-				<?php
-				if (sizeof($multiaction_options) > 1) {
-					?>
+			<?php
+				if (sizeof($multiaction_options) > 1) { ?>
 					<option value=""><?php echo $text_choose_action; ?></option>
 				<?php
 				}
-				foreach ($multiaction_options as $value => $text) {
-					?>
+				foreach ($multiaction_options as $value => $text) {	?>
 					<option value="<?php echo $value; ?>"><?php echo $text; ?></option>
 				<?php
 				} ?>
 			</select>
 			<a id="<?php echo $data['table_id'] ?>_go" class="btn btn-xs btn-default"><?php echo $text_go; ?></a>
 		</div>
-		<?php } ?>
-
+	<?php } ?>
 	</form>
 </div>
 <?php 
@@ -31,7 +28,7 @@
 				'type' => 'modal',
 				'id' => 'viewport_modal',
 				'modal_type' => 'lg',
-                'data_source' =>'ajax',
+				'data_source' =>'ajax',
 				'js_onload' => "
 						var url = $(this).data('bs.modal').options.fullmodeHref;
 						$('#viewport_modal .modal-header a.btn').attr('href',url);
@@ -50,7 +47,13 @@ var initGrid_<?php echo $data['table_id'] ?> = function ($) {
 	var text_select_items = <?php js_echo($text_select_items); ?>;
 	var _table_id = '<?php echo $data['table_id'] ?>';
 	var table_id = '#<?php echo $data['table_id'] ?>';
-	var jq_names = [<?php echo "'" . implode("','", $data['colNames']) . "'"?>];
+	var jq_names = [<?php
+		foreach($data['colNames'] as $col_name){
+			js_echo($col_name);
+			echo ',';
+		}
+		//echo "'" . implode("','", $data['colNames']) . "'"
+		?>];
 	var jq_model = [<?php
 	$i = 1;
 	foreach ($data['colModel'] as $m) {
@@ -71,24 +74,25 @@ var initGrid_<?php echo $data['table_id'] ?> = function ($) {
 		}
 		echo "\r\n";
 	}
-
 	?>];
 
-	var updatePager = false;
+	var gridFirstLoad = true;
 
-	var updatePerPage = function(records) {
-		if (updatePager) return;
-		var html, rowNum, rowList = [<?php echo implode(',', $data['rowList']) ?>];
+	var updatePerPage = function(records, limit) {
+		var html='',
+			rowList = [<?php echo implode(',', $data['rowList']) ?>];
 		for (var i = 0; i < rowList.length; i++) {
 			if (records > rowList[i]) {
-				html += '<option value="' + rowList[i] + '">' + rowList[i] + '</option>';
+				html += '<option '
+					+ (rowList[i] == limit ? ' selected="selected" ' : '')
+					+'value="' + rowList[i] + '">'
+					+ rowList[i] + '</option>';
 			}
 		}
 		if (records <= 100) {
-			html += '<option value="' + records + '"><?php echo $text_all ?></option>';
+			html += '<option '+ (records == limit ? ' selected="selected" ' : '') +'value="' + records + '"><?php echo $text_all ?></option>';
 		}
 		$(table_id + '_pager_center .ui-pg-selbox').html(html);
-		updatePager = true;
 	}
 
 	<?php if( $data["drag_sort_column"] ) { ?>
@@ -101,12 +105,12 @@ var initGrid_<?php echo $data['table_id'] ?> = function ($) {
 			var rows = table.tBodies[0].rows;
 			var draged_id = row.id;
 			var newpos = $('#'+row.id).position();
-			//slip if row was not moved (single click of incompleted drag fix)
+			//slip if row was not moved (single click of incomplete drag fix)
 			if (newpos.top == startpos.top && newpos.left == startpos.left) {
 				return false;
 			}
 
-			//check for depth if this is a nesteted tree greed.
+			//check for depth if this is a nested tree greed.
 			var depth = $(table_id).getNodeDepth( $(table_id).getRowData(draged_id) );
 			if (depth > 0) {
 				//build sort for only children
@@ -119,7 +123,7 @@ var initGrid_<?php echo $data['table_id'] ?> = function ($) {
 				for (var i=0; i<children.length; i++) {
 					children_ids.push(children[i]._id_);
 				}
-				//preseve the order and build ids list
+				//presave the order and build ids list
 				for (var i=1; i<rows.length; i++) {
 					if ( $.inArray(rows[i].id, children_ids) >= 0 ) {
 						ids_order.push(rows[i].id);
@@ -143,35 +147,35 @@ var initGrid_<?php echo $data['table_id'] ?> = function ($) {
 	<?php } ?>
 
 	$(table_id).jqGrid<?php echo $history_mode ? 'History' : ''; ?>({
-		url:'<?php echo $data["url"] ?>',
-		editurl:'<?php echo $data["editurl"] ?>',
-		datatype:"json",
-		mtype:"POST",
-		contentType:"application/json; charset=utf-8",
-		colNames:jq_names,
-		colModel:jq_model,
+		url: '<?php echo $data["url"] ?>',
+		editurl: '<?php echo $data["editurl"] ?>',
+		datatype: "json",
+		mtype: "POST",
+		contentType: "application/json; charset=utf-8",
+		colNames: jq_names,
+		colModel: jq_model,
 		rowNum: <?php echo $data['rowNum'] ?>,
-		rowList:[<?php echo implode(',', $data['rowList']) ?>],
-		pager:table_id + '_pager',
+		rowList: [<?php echo implode(',', $data['rowList']) ?>],
+		pager: table_id + '_pager',
 		multiselect: <?php echo $data['multiselect'] ?>,
 		hoverrows: <?php echo $data['hoverrows'] ?>,
-		viewrecords:true,
+		viewrecords: true,
 		altRows: <?php echo $data['altRows'] ?>,
-		height:'100%',
+		height: '100%',
 		width: ($.browser.msie ? ($(window).width()-100) : '100%'),// memory leak in damn msie
 		shrinkToFit: false,
 		autowidth: true,
-		sortname:'<?php echo $data['sortname'] ?>',
-		sortorder:'<?php echo $data['sortorder'] ?>',
+		sortname: '<?php echo $data['sortname'] ?>',
+		sortorder: '<?php echo $data['sortorder'] ?>',
 		<?php if($data['expand_column']) { ?>
 		treeGrid: true,
 		treeGridModel: 'adjacency',
 		ExpandColClick: true,
-		ExpandColumn:  '<?php echo $data['expand_column']; ?>',
+		ExpandColumn: '<?php echo $data['expand_column']; ?>',
 		<?php } ?>
 		gridComplete: function() {
 			<?php if( $data["drag_sort_column"] ) { ?>
-			//enable row drag/drop sortingonly if sorting present and used
+			//enable row drag/drop sorting only if sorting present and used
 			var sort_by = $(table_id).jqGrid('getGridParam','sortname');
 			if (sort_by == '<?php echo $data["drag_sort_column"]; ?>') {
 				$(table_id + " tr").removeClass("nodrag nodrop");
@@ -180,6 +184,12 @@ var initGrid_<?php echo $data['table_id'] ?> = function ($) {
 			<?php } ?>
 		},
 		loadComplete:function (data) {
+			if(!gridFirstLoad){
+				save_grid_search_form_parameters();
+			}
+
+			gridFirstLoad = false;
+
 			if(data!=undefined){
 				if (data.userdata!=undefined && data.userdata.classes != null) {
 					for (var id in data.userdata.classes) {
@@ -200,7 +210,7 @@ var initGrid_<?php echo $data['table_id'] ?> = function ($) {
 				$(table_id + '_wrapper .no_results').hide();
 			}
 
-			//add wrapers to the fields
+			//add wrappers to the fields
 			$(table_id).find("input:not( input.cbox ), textarea, select").each(function () {
 				$.aform.styleGridForm(this);
 				$(this).aform({triggerChanged:false});
@@ -227,6 +237,15 @@ var initGrid_<?php echo $data['table_id'] ?> = function ($) {
 			$("input.cbox", table_id).aform({
 				triggerChanged:false
 			});
+
+			//add grid filter fields for saved state
+			var gridInfo = $.parseJSON($.cookie("grid_params"));
+			if(gridInfo && gridInfo.postData && gridInfo.postData.filters){
+				var $filters = $.parseJSON(gridInfo.postData.filters);
+				$.each ($filters.rules, function( index, value ){
+					$('#gs_'+value.field).val(value.data);
+				});
+			}
 
 			var actions = '';
 			var actions_urls = {};
@@ -332,7 +351,9 @@ var initGrid_<?php echo $data['table_id'] ?> = function ($) {
 						.not('.grid_action_delete[href="#"], .grid_action_delete[href=""], .grid_action_save, .grid_action_expand')
 						.click(function () {
 
-					if($(this).attr('href')!='#'){ return; }
+					if($(this).attr('href')!='#'){
+						return;
+					}
 
 					var btn_type = $(this).attr('data-action-type');
 
@@ -391,7 +412,6 @@ var initGrid_<?php echo $data['table_id'] ?> = function ($) {
 						.trigger("reloadGrid",[{current:true}]);
 					return false;
 				});
-
 			}
 
 			if (!$(table_id + '_wrapper tr th.ui-state-highlight').length) {
@@ -408,9 +428,9 @@ var initGrid_<?php echo $data['table_id'] ?> = function ($) {
 				}
 			}
 
-			updatePerPage(records);
+			updatePerPage(records, rowNum);
 
-			// select rows after load by userdata array
+			// select rows after load by user data array
 			if ($(table_id).getGridParam('datatype') === "json") {
 				var userdata = $(table_id).getGridParam('userData');
 				var curPage = $(table_id).getGridParam('page');
@@ -438,7 +458,7 @@ var initGrid_<?php echo $data['table_id'] ?> = function ($) {
 		onSelectAll:function (ids, status) {
 			checkAll('jqg_' + _table_id, status);
 		},
-		onSortCol:function (index, iCol, sortorder) 	{
+		onSortCol:function (index, iCol, sortorder){
 			$(table_id + '_wrapper tr th.ui-th-column').removeClass('ui-state-highlight');
 			$(table_id + '_wrapper tr.ui-jqgrid-labels th:eq(' + iCol + ')').addClass('ui-state-highlight');
 			$(table_id + '_wrapper tr.ui-search-toolbar th:eq(' + iCol + ')').addClass('ui-state-highlight');
@@ -482,7 +502,43 @@ var initGrid_<?php echo $data['table_id'] ?> = function ($) {
 			}
 
 			return false;
+		},
+		beforeRequest: function() {
+			<?php if($this->request->get['saved_list'] == $data['table_id']) { ?>
+				//apply saved grid for initial grid load only
+				var grid = $(table_id);
+				if(gridFirstLoad === true) {
+					if ($.cookie("grid_params") != null && $.cookie("grid_params") != "") {
+						var gridInfo = $.parseJSON($.cookie("grid_params"));
+						//TODO: merge this calls
+						grid.jqGrid('setGridParam', {sortname: gridInfo.sortname});
+						grid.jqGrid('setGridParam', {sortorder: gridInfo.sortorder});
+						grid.jqGrid('setGridParam', {selrow: gridInfo.selrow});
+						grid.jqGrid('setGridParam', {page: gridInfo.page});
+						grid.jqGrid('setGridParam', {rowNum: gridInfo.rowNum});
+						//purge nodeid (tree leaf expand parameter)
+						gridInfo.postData.nodeid = '';
+						grid.jqGrid('setGridParam', {postData: gridInfo.postData});
+						grid.jqGrid('setGridParam', {search: gridInfo.search});
 
+						//do we have external search form?
+						var search_data = $.parseJSON($.cookie("grid_search_form"));
+						if (search_data != null && search_data.table_id == _table_id) {
+							var $form = $(table_id + '_search');
+							var new_url = '<?php echo $data["url"] ?>&' + $form.serialize();
+							grid.jqGrid('setGridParam', {url: new_url});
+						}
+					}
+				} else {
+					save_grid_parameters($(table_id));
+				}
+			<?php } else { ?>
+				//reset grid search for initial load only
+				if(gridFirstLoad === true) {
+					$.cookie("grid_search_form", "");
+				}
+				save_grid_parameters($(table_id));
+			<?php } ?>
 		}
 	});
 	$(table_id).jqGrid('navGrid',
@@ -494,13 +550,12 @@ var initGrid_<?php echo $data['table_id'] ?> = function ($) {
 							refreshstate: "current"
 						});
 
-<?php    if ($data['hidden_head']) { ?>
+<?php	if ($data['hidden_head']) { ?>
 	$('.ui-jqgrid-hdiv').hide();
-	<?php
-}
+<?php }
+
 if ($custom_buttons) {
-	foreach ($custom_buttons as $custom_button) {
-		?>
+	foreach ($custom_buttons as $custom_button) { ?>
 		$(table_id).jqGrid('navGrid', table_id + '_pager').navButtonAdd(table_id + '_pager', {
 			caption:"<?php echo $custom_button['caption']; ?>",
 			buttonicon:"<?php echo $custom_button['buttonicon']; ?>",
@@ -508,18 +563,20 @@ if ($custom_buttons) {
 			position:"<?php echo $custom_button['position']; ?>",
 			title:"<?php echo $custom_button['title']; ?>",
 			cursor:"<?php echo $custom_button['cursor']; ?>"});
-
-		<?php
-	}
+	<?php }
 } ?>
+
 <?php if ($data['columns_search']) { ?>
 	$(table_id).jqGrid('filterToolbar', { stringResult:true});
 	<?php } ?>
 
 <?php if ($data['search_form']) { ?>
-	//submit
+	//process grid search from submit
 	$(table_id + '_search').submit(function () {
-		var new_url = '<?php echo $data["url"] ?>&' + $(this).serialize();
+		var params = $(this).serialize();
+		var new_url = '<?php echo $data["url"] ?>&' + params;
+		//save search request
+		save_grid_search_form_parameters();
 		$(table_id)
 			.jqGrid('setGridParam', {url:new_url, page:1})
 			.trigger("reloadGrid",[{current:true}]);
@@ -527,19 +584,34 @@ if ($custom_buttons) {
 	});
 	//reset
 	$(table_id + '_search button[type="reset"]').click(function () {
-		$('input, select', table_id + '_search').val('').change();
+		//reset pre-saved cookies and search form fields
+		$.cookie("grid_search_form", "");
+		$.cookie("grid_params", "");
+		$(table_id + '_search').find("input[type=text]").attr('value', '');
+		$(table_id + '_search').find("select").each(function () {
+			$s = $(this);
+			$s.find('option').each(function () {
+				if ( $(this).attr('selected') === "selected" ) {
+					$(this).removeAttr('selected');
+				}
+				//reset chosen if any
+				if ($s.parent().find(".chosen-select").length > 0) {
+					$s.parent().find(".chosen-select").trigger("chosen:updated");
+				}
+			});
+		});
 		var new_url = '<?php echo $data["url"] ?>';
 		$(table_id)
 			.jqGrid('setGridParam', {url:new_url})
 			.trigger("reloadGrid",[{current:true}]);
 		return false;
 	});
-	<?php } ?>
+<?php } ?>
 
 <?php if ($data['multiselect'] == 'true') { ?>
 	$(table_id + '_multiactions').appendTo($(table_id + '_pager_right'));
 	$(table_id + "_go").click(function () {
-		//get all selected rows based on multiselct
+		//get all selected rows based on multi-select
 		var ids = $(table_id).jqGrid('getGridParam', 'selarrrow');
 		//get single selected row
 		ids.push( $(table_id).jqGrid('getGridParam', 'selrow') );
@@ -553,19 +625,16 @@ if ($custom_buttons) {
 				$(table_id).jqGrid(
 					'delGridRow',
 					ids,
-					{
-						reloadAfterSubmit:true,
+					{	reloadAfterSubmit: true,
 						beforeShowForm:function ($form) {
 							$("td.delmsg", $form[0]).html(<?php js_echo($text_delete_confirm); ?>);
 							var dlgDiv = $("#delmod" + _table_id);
 							var parentDiv = $(table_id + '_wrapper');
 							$('#dData', dlgDiv).show();
-
 							selRowId = $(table_id).jqGrid('getGridParam', 'selrow'),
 							selRowCoordinates = $('#' + selRowId).offset();
 							dlgDiv.css('top', selRowCoordinates.top);
 							dlgDiv.css('left', Math.round((parentDiv.width() - dlgDiv.width()) / 2) + "px");
-
 						},
 						afterSubmit:function (response, postdata) {
 							if (response.responseText != '') {
@@ -611,7 +680,6 @@ if ($custom_buttons) {
 			default:
 				break;
 		}
-
 	});
 	<?php } ?>
 
@@ -641,30 +709,52 @@ if ($custom_buttons) {
 					alert(textStatus + ": " + errorThrown);
 				}
 			});
-		}	
+		}
+	}
+
+	//save grid settings into cookie
+	function save_grid_parameters($grid) {
+		var gridInfo = new Object();
+		gridInfo.table_id =  $grid.jqGrid('getGridParam', 'id');
+		gridInfo.sortname = $grid.jqGrid('getGridParam', 'sortname');
+		gridInfo.sortorder = $grid.jqGrid('getGridParam', 'sortorder');
+		gridInfo.selrow = $grid.jqGrid('getGridParam', 'selrow');
+		gridInfo.page = $grid.jqGrid('getGridParam', 'page');
+		gridInfo.rowNum = $grid.jqGrid('getGridParam', 'rowNum');
+		gridInfo.postData = $grid.jqGrid('getGridParam', 'postData');
+		gridInfo.search = $grid.jqGrid('getGridParam', 'search');
+		$.cookie("grid_params", JSON.stringify(gridInfo));
+	}
+
+	function save_grid_search_form_parameters(){
+		var params = $(table_id + '_search').serialize();
+		var searchInfo = new Object();
+		searchInfo.params = params;
+		searchInfo.table_id = _table_id;
+		$.cookie("grid_search_form", JSON.stringify(searchInfo));
 	}
 
 	//resize jqgrid
 	var resize_the_grid = function() {
-	    // Get width of parent contentpanel
-	    $targetContainer = $(table_id).closest('.contentpanel'); 
-	    var width = $targetContainer.width() - 20;
-	    if(width < 750) {
-	    	//min grid width is 750px;
-	    	width = 750;
-	    }
-	    if (width > 0 && Math.abs(width - $(table_id).width()) > 5) {
-	        $(table_id).setGridWidth(width, true);
-	    }	
+		// Get width of parent contentpanel
+		$targetContainer = $(table_id).closest('.contentpanel');
+		var width = $targetContainer.width() - 20;
+		if(width < 750) {
+			//min grid width is 750px;
+			width = 750;
+		}
+		if (width > 0 && Math.abs(width - $(table_id).width()) > 5) {
+			$(table_id).setGridWidth(width, true);
+		}
 	}
 
 	//resize on load
-	resize_the_grid();	
+	resize_the_grid();
 	$(window).bind('resize', function() {
 		//resize grid width on window resize
 		resize_the_grid();
 	}).trigger('resize');
-	//resize on left penel 
+	//resize on left panel
 	$('body').bind('leftpanelChanged', function() {
 		resize_the_grid();
 	});
@@ -690,16 +780,14 @@ if ($custom_buttons) {
 	<?php if ($data['multiselect'] == 'true') { ?>
 		index--;
 		<?php }?>
-		//index = (index < 0) ? 0 : index;
+		var align = '';
 		if (!jq_model[index]) {
-			var algn = 'middle';
+			align = 'middle';
 		} else {
-			var algn = jq_model[index].align;
+			align = jq_model[index].align;
 		}
-		$(this).parent().css('text-align', algn);
+		$(this).parent().css('text-align', align);
 		$.aform.styleGridForm(this);
-
-
 	});
 	//remove reset button in search
 	$('tr.ui-search-toolbar').find(".ui-search-clear").remove();
@@ -711,5 +799,8 @@ if ($init_onload) {
 ?>
 initGrid_<?php echo $data['table_id'] ?>($);
 <?php } ?>
+
+//adjust grid pager:
+$('#<?php echo $data['table_id'] ?>_pager_center').css({width: ''});
 
 </script>

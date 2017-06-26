@@ -5,7 +5,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright © 2011-2016 Belavier Commerce LLC
+  Copyright © 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   License details is bundled with this package in the file LICENSE.txt.
@@ -21,9 +21,8 @@ if (!defined('DIR_CORE') || !IS_ADMIN) {
 	header('Location: static_pages/');
 }
 class ControllerResponsesListingGridProduct extends AController {
-
+	public $data = array();
 	public function main() {
-
 		//init controller data
 		$this->extensions->hk_InitData($this, __FUNCTION__);
 
@@ -31,7 +30,7 @@ class ControllerResponsesListingGridProduct extends AController {
 		$this->loadModel('catalog/product');
 		$this->loadModel('tool/image');
 
-		//Clean up parametres if needed
+		//Clean up parameters if needed
 		if (isset($this->request->get['keyword']) && $this->request->get['keyword'] == $this->language->get('filter_product')) {
 			unset($this->request->get['keyword']);
 		}
@@ -80,7 +79,6 @@ class ControllerResponsesListingGridProduct extends AController {
 				$response->userdata->classes[ $result['product_id'] ] = 'warning';
 			}
 
-
 			if($result['call_to_order']>0){
 				$price = $this->language->get('text_call_to_order');
 			}else{
@@ -114,16 +112,14 @@ class ControllerResponsesListingGridProduct extends AController {
 			);
 			$i++;
 		}
-
+		$this->data['response'] = $response;
 		//update controller data
 		$this->extensions->hk_UpdateData($this, __FUNCTION__);
-
 		$this->load->library('json');
-		$this->response->setOutput(AJson::encode($response));
+		$this->response->setOutput(AJson::encode($this->data['response']));
 	}
 
 	public function update() {
-
 		//init controller data
 		$this->extensions->hk_InitData($this, __FUNCTION__);
 
@@ -148,17 +144,15 @@ class ControllerResponsesListingGridProduct extends AController {
 							$error = new AError('');
 							return $error->toJSONResponse('VALIDATION_ERROR_406', array( 'error_text' => $err ));
 						}
-
 						$this->model_catalog_product->deleteProduct($id);
 					}
 				break;
 			case 'save':
-				$fields = array( 'product_description', 'model', 'call_to_order', 'price', 'quantity', 'status' );
+				$allowedFields = array_merge(array( 'product_description', 'model', 'call_to_order', 'price', 'quantity', 'status' ), (array)$this->data['allowed_fields']);
 				$ids = explode(',', $this->request->post['id']);
 				if (!empty($ids))
 					foreach ($ids as $id) {
-						foreach ($fields as $f) {
-
+						foreach ($allowedFields as $f) {
 							if ($f == 'status' && !isset($this->request->post['status'][ $id ]))
 								$this->request->post['status'][ $id ] = 0;
 
@@ -172,7 +166,6 @@ class ControllerResponsesListingGridProduct extends AController {
 							}
 						}
 					}
-
 				break;
 			case 'relate':
 				$ids = explode(',', $this->request->post['id']);
@@ -217,10 +210,10 @@ class ControllerResponsesListingGridProduct extends AController {
 					$error = new AError('');
 					return $error->toJSONResponse('VALIDATION_ERROR_406', array( 'error_text' => $err ));
 				}
-                if($key=='date_available'){
-                    $value = dateDisplay2ISO($value);
-                }
-                $data = array( $key => $value );
+				if($key=='date_available'){
+					$value = dateDisplay2ISO($value);
+				}
+				$data = array( $key => $value );
 				$this->model_catalog_product->updateProduct($product_id, $data);
 				$this->model_catalog_product->updateProductLinks($product_id, $data);
 			}
@@ -228,8 +221,8 @@ class ControllerResponsesListingGridProduct extends AController {
 		}
 
 		//request sent from jGrid. ID is key of array
-		$fields = array( 'product_description', 'model', 'price', 'call_to_order', 'quantity', 'status' );
-		foreach ($fields as $f) {
+		$allowedFields = array_merge(array( 'product_description', 'model', 'price', 'call_to_order', 'quantity', 'status' ), (array)$this->data['allowed_fields']);
+		foreach ($allowedFields as $f) {
 			if (isset($this->request->post[ $f ]))
 				foreach ($this->request->post[ $f ] as $k => $v) {
 					$err = $this->_validateField($f, $v);
@@ -330,36 +323,39 @@ class ControllerResponsesListingGridProduct extends AController {
 	}
 
 	private function _validateField($field, $value) {
-		$err = '';
+		$this->data['error'] = '';
 		switch ($field) {
 			case 'product_description' :
 				if (isset($value['name']) && ((mb_strlen($value['name']) < 1) || (mb_strlen($value['name']) > 255))) {
-					$err = $this->language->get('error_name');
+					$this->data['error'] = $this->language->get('error_name');
 				}
-				break;				
+				break;
 			case 'model' :
 				if (mb_strlen($value) > 64) {
-					$err = $this->language->get('error_model');
+					$this->data['error'] = $this->language->get('error_model');
 				}
 				break;
 			case 'keyword' :
-				$err = $this->html->isSEOkeywordExists('product_id='.$this->request->get['id'], $value);
+				$this->data['error'] = $this->html->isSEOkeywordExists('product_id='.$this->request->get['id'], $value);
 				break;
 			case 'length' :
 			case 'width'  :
 			case 'height' :
 			case 'weight' :
-				$v =  preformatFloat(abs($value), $this->language->get('decimal_point'));
+				$v =  abs(preformatFloat($value, $this->language->get('decimal_point')));
 				if($v>=1000){
-					$err = $this->language->get('error_measure_value');
+					$this->data['error'] = $this->language->get('error_measure_value');
 				}
 				break;
 		}
-		return $err;
+		$this->extensions->hk_ValidateData($this, array(__FUNCTION__, $field, $value));
+		return $this->data['error'];
 	}
 
 	private function _validateDelete($id) {
-		return null;
+		$this->data['error'] = '';
+		$this->extensions->hk_ValidateData($this, array(__FUNCTION__, $id));
+		return $this->data['error'];
 	}
 
 }

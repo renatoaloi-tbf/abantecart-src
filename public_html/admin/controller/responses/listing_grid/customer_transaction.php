@@ -5,7 +5,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright © 2011-2016 Belavier Commerce LLC
+  Copyright © 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   License details is bundled with this package in the file LICENSE.txt.
@@ -48,20 +48,27 @@ class ControllerResponsesListingGridCustomerTransaction extends AController {
 			'customer_id' => (int)$this->request->get['customer_id']
 		);
 
-		if ( has_value($this->request->get[ 'user' ]) )
-			$data['filter']['user'] = $this->request->get[ 'user' ];
-		if ( has_value($this->request->get['credit']) )
-			$data['filter']['credit'] = $this->request->get[ 'credit' ];
-		if ( has_value($this->request->get['debit']) )
-			$data['filter']['debit'] = $this->request->get[ 'debit' ];
-		if ( has_value($this->request->get['transaction_type']) )
-			$data['filter']['transaction_type'] = $this->request->get[ 'transaction_type' ];
-		if ( has_value($this->request->get['date_start']) )
-			$data['filter']['date_start'] = dateDisplay2ISO($this->request->get[ 'date_start' ]);
-		if ( has_value($this->request->get['date_end']) )
-			$data['filter']['date_end'] = dateDisplay2ISO($this->request->get[ 'date_end' ]);
+		if ( has_value($this->request->get[ 'user' ]) ){
+			$data['filter']['user'] = $this->request->get['user'];
+		}
+		if ( has_value($this->request->get['credit']) ){
+			$data['filter']['credit'] = $this->request->get['credit'];
+		}
+		if ( has_value($this->request->get['debit']) ){
+			$data['filter']['debit'] = $this->request->get['debit'];
+		}
+		if ( has_value($this->request->get['transaction_type']) ){
+			$data['filter']['transaction_type'] = $this->request->get['transaction_type'];
+		}
+		if ( has_value($this->request->get['date_start']) ){
+			$data['filter']['date_start'] = dateDisplay2ISO($this->request->get['date_start']);
+		}
+		if ( has_value($this->request->get['date_end']) ){
+			$data['filter']['date_end'] = dateDisplay2ISO($this->request->get['date_end']);
+		}
 
-		$allowedFields = array( 'user', 'credit', 'debit', 'transaction_type', 'date_start', 'date_end' );
+		$allowedFields = array_merge(array ('user', 'credit', 'debit', 'transaction_type', 'date_start', 'date_end'), (array)$this->data['allowed_fields']);
+
 		if ( isset($this->request->post[ '_search' ]) && $this->request->post[ '_search' ] == 'true') {
 			$searchData = AJson::decode(htmlspecialchars_decode($this->request->post[ 'filters' ]), true);
 
@@ -103,19 +110,20 @@ class ControllerResponsesListingGridCustomerTransaction extends AController {
 			);
 			$i++;
 		}
-
+		$this->data['response'] = $response;
 		//update controller data
 		$this->extensions->hk_UpdateData($this, __FUNCTION__);
-
+		$this->load->library('json');
 		$this->response->addJSONHeader();
-		$this->response->setOutput(AJson::encode($response));
+		$this->response->setOutput(AJson::encode($this->data['response']));
 	}
 
 
 	private function _validateForm($data=array()) {
-
-		$output['credit'] = (float)$data['credit'];
-		$output['debit'] = (float)$data['debit'];
+		$output = array(
+				'credit' => (float)$data['credit'],
+				'debit'  => (float)$data['debit']
+		);
 
 		if(!$output['credit'] && !$output['debit']){
 			$this->error[] = $this->language->get('error_empty_debit_credit');
@@ -135,10 +143,10 @@ class ControllerResponsesListingGridCustomerTransaction extends AController {
 		$output['comment'] = htmlentities($data['comment'],ENT_QUOTES,'UTF-8');
 		$output['description'] = htmlentities($data['description'],ENT_QUOTES,'UTF-8');
 		$output['notify'] = (int)$data['notify'] ? 1 : 0;
-
+		$this->data['output'] = $output;
 		$this->extensions->hk_ValidateData( $this );
 
-		return $output;
+		return $this->data['output'];
 	}
 
 
@@ -160,10 +168,10 @@ class ControllerResponsesListingGridCustomerTransaction extends AController {
 
 		//check is data valid
 		$valid_data = $this->_validateForm($this->request->post);
-        $valid_data['customer_id'] = $this->request->get['customer_id'];
+		$valid_data['customer_id'] = $this->request->get['customer_id'];
 
 		if(!$this->error){
-            $this->model_sale_customer_transaction->addCustomerTransaction($valid_data);
+			$this->model_sale_customer_transaction->addCustomerTransaction($valid_data);
 			$result['result'] = true;
 			$result['result_text'] = $this->language->get('text_transaction_success');
 			$balance = $this->model_sale_customer_transaction->getBalance($this->request->get['customer_id']);
@@ -204,11 +212,11 @@ class ControllerResponsesListingGridCustomerTransaction extends AController {
 		$transaction_id = (int)$this->request->get['customer_transaction_id'];
 		$this->data['customer_transaction_id'] = $transaction_id;
 
-        if($transaction_id){
-            $info = $this->model_sale_customer_transaction->getCustomerTransaction($this->request->get['customer_transaction_id']);
+		if($transaction_id){
+			$info = $this->model_sale_customer_transaction->getCustomerTransaction($this->request->get['customer_transaction_id']);
 			$this->data['text_title'] = $this->language->get('popup_title_info');
 			$readonly = true;
-        }else{
+		}else{
 			$this->data['text_title'] = $this->language->get('popup_title_insert');
 			$readonly = false;
 		}
@@ -220,9 +228,11 @@ class ControllerResponsesListingGridCustomerTransaction extends AController {
 				'form_name' => 'transaction_form',
 			));
 			$this->data['form']['form_open'] = $form->getFieldHtml(array(
-			    'type' => 'form',
-			    'name' => 'tFrm',
-			    'action' => $this->html->getSecureURL('listing_grid/customer_transaction/addtransaction','&customer_id='.$this->request->get['customer_id']),
+				'type' => 'form',
+				'name' => 'tFrm',
+				'action' => $this->html->getSecureURL(
+													'listing_grid/customer_transaction/addtransaction',
+													'&customer_id='.$this->request->get['customer_id']),
 				'attr' => 'data-confirm-exit="true" class="form-horizontal"',
 			));
 
@@ -269,6 +279,7 @@ class ControllerResponsesListingGridCustomerTransaction extends AController {
 			$this->data['form']['fields']['other_type'] = $form->getFieldHtml(array(
 																			'type' => 'input',
 																			'name' => 'transaction_type[1]',
+																			'placeholder' => $this->language->get('text_other_type_placeholder'),
 																			'value' => (!in_array($info['transaction_type'],$types)? $info['transaction_type'] :''),
 																			'attr' => ($readonly ? 'disabled="disabled"' : '')
 																	));

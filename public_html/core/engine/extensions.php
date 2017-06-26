@@ -5,7 +5,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright © 2011-2016 Belavier Commerce LLC
+  Copyright © 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   License details is bundled with this package in the file LICENSE.txt.
@@ -146,6 +146,15 @@ class ExtensionCollection{
 			}
 
 			$tmp_return = call_user_func_array(array ($extension, $method), $args);
+			//when around method hook - returns ONLY first result
+			if (strpos($method, 'around') === 0 && method_exists($extension, $method)){
+				$return = $tmp_return;
+				//for avoid functions
+				if($return === null){
+					$return = Extension::REPLACED_METHOD;
+				}
+				return $return;
+			}
 			if ($tmp_return !== null){
 				$return = $tmp_return;
 			}
@@ -164,9 +173,14 @@ class ExtensionCollection{
 	public function __call($method, $args){
 		$return = $this->dispatchMethod($method, $args);
 		if (strpos($method, 'around') === 0){
+			//when no result from around-hook - set result to true to continue call-chain and run base method
 			if ($return === null){
+				//set canrun to true
 				$return = true;
-			} elseif ($return === Extension::REPLACED_METHOD){
+			}
+			//when hook has been called - return null to prevent run base method later
+			//case for avoid methods and
+			elseif ($return === Extension::REPLACED_METHOD || $return === true){
 				$return = null;
 			}
 		}
@@ -184,8 +198,8 @@ class ExtensionCollection{
  * @property ACache $cache
  * @method hk_InitData(object $baseObject, string $baseObjectMethod)
  * @method hk_UpdateData(object $baseObject, string $baseObjectMethod)
- * @method hk_ProcessData(object $baseObject, string $point_name = '')
- * @method hk_ValidateData(object $baseObject)
+ * @method hk_ProcessData(object $baseObject, string $point_name = '', mixed $array = null)
+ * @method hk_ValidateData(object $baseObject, array $args = array())
  * @method hk_confirm(object $baseObject, int $order_id, int $order_status_id, string $comment)
  * @method hk_query(object $baseObject, string $sql, bool $noexcept)
  * @method hk_load(object $baseObject, string $block, string $mode)
@@ -489,6 +503,9 @@ class ExtensionsApi{
 				$data['sort_order'][0] = '`key`';
 			}
 			$sql .= "\n ORDER BY " . implode(' ', $data['sort_order']);
+		} else {
+			//default extension sorting based on priority provided. High number is higher priority 
+			$sql .= "\n ORDER BY e.priority desc";		
 		}
 		$total = null;
 		if (has_value($data['page']) && has_value($data['limit'])){
@@ -531,6 +548,9 @@ class ExtensionsApi{
 			$filename = DIR_EXT . $extension . '/admin/language/english/' . $extension . '/' . $extension . '.xml';
 		}
 		if (file_exists($filename)){
+			/**
+			 * @var DOMNode $xml
+			 */
 			$xml = simplexml_load_file($filename);
 			if ($xml && $xml->definition){
 				foreach ($xml->definition as $def){
@@ -679,7 +699,7 @@ class ExtensionsApi{
 		 * @var Registry
 		 */
 		$ext_controllers = $ext_models = $ext_languages = $ext_templates = array ();
-		$enabled_extensions = $extensions = array ();
+		$enabled_extensions = $hook_extensions = array ();
 
 		foreach ($this->db_extensions as $ext){
 			//check if extension is enabled and not already in the picked list
@@ -691,10 +711,10 @@ class ExtensionsApi{
 					&& !in_array($ext, $enabled_extensions)
 					&& has_value($ext)
 			){
-
-				// run order is sort_order!
-				$priority = (int)$this->registry->get('config')->get($ext . '_sort_order');
-				$enabled_extensions[$priority][] = $ext;
+				
+				//priority for extension execution is set in the <priority> tag of extension configuration
+				//order for priority is already set here
+				$enabled_extensions[] = $ext;
 
 				$controllers = $languages = $models = $templates = array (
 						'storefront' => array (),
@@ -711,18 +731,12 @@ class ExtensionsApi{
 
 				$class = 'Extension' . preg_replace('/[^a-zA-Z0-9]/', '', $ext);
 				if (class_exists($class)){
-					$extensions[] = $class;
+					$hook_extensions[] = $class;
 				}
 			}
 		}
-
-		$this->setExtensionCollection(new ExtensionCollection($extensions));
-		$this->enabled_extensions = array ();
-		//sort extensions list by sort_order by ascending (sort_order)
-		ksort($enabled_extensions);
-		foreach ($enabled_extensions as $exts){
-			$this->enabled_extensions = array_merge($this->enabled_extensions, $exts);
-		}
+		$this->enabled_extensions = $enabled_extensions;
+		$this->setExtensionCollection(new ExtensionCollection($hook_extensions));
 
 		ADebug::variable('List of loaded extensions', $enabled_extensions);
 
@@ -1080,7 +1094,7 @@ class ExtensionUtils{
 	 */
 	protected $name;
 	/**
-	 * @var SimpleXmlElement
+	 * @var SimpleXmlElement|DOMNode
 	 */
 	protected $config;
 	/**
@@ -1218,8 +1232,12 @@ class ExtensionUtils{
 						'value'         => $value,
 						'type'          => (string)$item->type,
 						'resource_type' => (string)$item->resource_type,
+						//to use few datasources inside the same form-element such as html_template
+						'data_source'   => (array)$item->variants->data_source,
+						//TODO: remove it in 2.0
 						'model_rt'      => (string)$item->variants->data_source->model_rt,
 						'method'        => (string)$item->variants->data_source->method,
+						//end of remove
 						'field1'        => (string)$item->variants->fields->field[0],
 						'field2'        => (string)$item->variants->fields->field[1],
 						'template'      => (string)$item->template,
@@ -1316,7 +1334,7 @@ class ExtensionUtils{
 			if (function_exists('settingsValidation')){
 				$result = call_user_func('settingsValidation', $data);
 				if (!isset($result['result']) || !isset($result['errors']) || !is_array($result['errors'])){
-					return array ('result' => false, 'errors' => array ('pattern' => 'Error: Cannot to validate data by validate.php file. Function returns incorrect formated data.'));
+					return array ('result' => false, 'errors' => array ('pattern' => 'Error: Cannot to validate data by validate.php file. Function returns incorrect formatted data.'));
 				}
 				return $result;
 			}

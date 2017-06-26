@@ -16,6 +16,20 @@ class ControllerResponsesExtensionDefaultStripe extends AController{
 
 		$this->loadLanguage('default_stripe/default_stripe');
 
+        $data['action'] = $this->html->getSecureURL('extension/default_stripe/send');
+
+        //build submit form
+        $form = new AForm();
+        $form->setForm(array( 'form_name' => 'stripe' ));
+        $data['form_open'] = $form->getFieldHtml(
+            array(
+                'type' => 'form',
+                'name' => 'stripe',
+                'attr' => 'class = "validate-creditcard"',
+                'csrf' => true
+            )
+        );
+
 		//neeed an order details 
 		$this->loadModel('checkout/order');
 		$order_info = $this->model_checkout_order->getOrder($this->session->data['order_id']);
@@ -25,20 +39,27 @@ class ControllerResponsesExtensionDefaultStripe extends AController{
 		$data['text_credit_card'] = $this->language->get('text_credit_card');
 		$data['text_wait'] = $this->language->get('text_wait');
 
+
 		$data['entry_cc_owner'] = $this->language->get('entry_cc_owner');
-		$data['cc_owner'] = HtmlElementFactory::create(array (
+		$data['cc_owner'] = $form->getFieldHtml(
+		    array (
 				'type'        => 'input',
 				'name'        => 'cc_owner',
 				'placeholder' => $this->language->get('entry_cc_owner'),
-				'value'       => $order_info['payment_firstname'] . ' ' . $order_info['payment_lastname']));
+				'value'       => $order_info['payment_firstname'] . ' ' . $order_info['payment_lastname']
+            )
+        );
 
 		$data['entry_cc_number'] = $this->language->get('entry_cc_number');
-		$data['cc_number'] = HtmlElementFactory::create(array (
+		$data['cc_number'] = $form->getFieldHtml(
+		    array (
 				'type'        => 'input',
 				'name'        => 'cc_number',
 				'attr'        => 'autocomplete="off"',
 				'placeholder' => $this->language->get('entry_cc_number'),
-				'value'       => ''));
+				'value'       => ''
+            )
+        );
 
 		$data['entry_cc_expire_date'] = $this->language->get('entry_cc_expire_date');
 
@@ -46,12 +67,15 @@ class ControllerResponsesExtensionDefaultStripe extends AController{
 		$data['entry_cc_cvv2_short'] = $this->language->get('entry_cc_cvv2_short');
 		$data['cc_cvv2_help_url'] = $this->html->getURL('r/extension/default_stripe/cvv2_help');
 
-		$data['cc_cvv2'] = HtmlElementFactory::create(array ('type'  => 'input',
-		                                                     'name'  => 'cc_cvv2',
-		                                                     'value' => '',
-		                                                     'style' => 'short',
-		                                                     'attr'  => ' autocomplete="off" ',
-		));
+		$data['cc_cvv2'] = $form->getFieldHtml(
+		    array (
+		        'type'  => 'input',
+                'name'  => 'cc_cvv2',
+                'value' => '',
+                'style' => 'short',
+                'attr'  => ' autocomplete="off" ',
+		    )
+        );
 
 		$data['button_confirm'] = $this->language->get('button_confirm');
 		$data['button_back'] = $this->language->get('button_back');
@@ -74,11 +98,15 @@ class ControllerResponsesExtensionDefaultStripe extends AController{
 		for ($i = $today['year']; $i < $today['year'] + 11; $i++){
 			$years[strftime('%Y', mktime(0, 0, 0, 1, 1, $i))] = strftime('%Y', mktime(0, 0, 0, 1, 1, $i));
 		}
-		$data['cc_expire_date_year'] = HtmlElementFactory::create(array ('type'    => 'selectbox',
-		                                                                 'name'    => 'cc_expire_date_year',
-		                                                                 'value'   => sprintf('%02d', date('Y') + 1),
-		                                                                 'options' => $years,
-		                                                                 'style'   => 'short'));
+		$data['cc_expire_date_year'] = $form->getFieldHtml(
+		    array (
+		        'type'    => 'selectbox',
+                'name'    => 'cc_expire_date_year',
+                'value'   => sprintf('%02d', date('Y') + 1),
+                'options' => $years,
+                'style'   => 'short'
+            )
+        );
 
 		if ($this->request->get['rt'] == 'checkout/guest_step_3'){
 			$back_url = $this->html->getSecureURL('checkout/guest_step_2', '&mode=edit', true);
@@ -86,23 +114,25 @@ class ControllerResponsesExtensionDefaultStripe extends AController{
 			$back_url = $this->html->getSecureURL('checkout/payment', '&mode=edit', true);
 		}
 		$data['back'] = $this->html->buildElement(
-				array (
-						'type'  => 'button',
-						'name'  => 'back',
-						'text'  => $this->language->get('button_back'),
-						'style' => 'button',
-						'href'  => $back_url,
-						'icon'  => 'icon-arrow-left'
-				));
+            array (
+                    'type'  => 'button',
+                    'name'  => 'back',
+                    'text'  => $this->language->get('button_back'),
+                    'style' => 'button',
+                    'href'  => $back_url,
+                    'icon'  => 'icon-arrow-left'
+            )
+        );
 
 		$data['submit'] = $this->html->buildElement(
-				array (
-						'type'  => 'button',
-						'name'  => 'strype_button',
-						'text'  => $this->language->get('button_confirm'),
-						'style' => 'button btn-orange pull-right',
-						'icon'  => 'icon-ok icon-white'
-				));
+            array (
+                    'type'  => 'button',
+                    'name'  => 'strype_button',
+                    'text'  => $this->language->get('button_confirm'),
+                    'style' => 'button btn-orange pull-right',
+                    'icon'  => 'icon-ok icon-white'
+            )
+        );
 
 		$this->view->batchAssign($data);
 
@@ -135,10 +165,21 @@ class ControllerResponsesExtensionDefaultStripe extends AController{
 	public function send(){
 		//init controller data
 		$this->extensions->hk_InitData($this, __FUNCTION__);
+
+        $json = array();
+
+        if(!$this->csrftoken->isTokenValid()){
+            $json['error'] = $this->language->get('error_unknown');
+            $this->load->library('json');
+            $this->response->setOutput(AJson::encode($json));
+            return;
+        }
+
 		$this->loadLanguage('default_stripe/default_stripe');
 
 		//validate input
 		$post = $this->request->post;
+
 		//check if saved cc mode is used
 		if (!$post['use_saved_cc']){
 			if (empty($post['cc_number'])){
@@ -219,5 +260,37 @@ class ControllerResponsesExtensionDefaultStripe extends AController{
 		$this->response->setOutput(AJson::encode($json));
 	}
 
-}
+	public function api() {
+		//init controller data
+		$this->extensions->hk_InitData($this, __FUNCTION__);
 
+		$this->data['text_note'] = $this->language->get('text_note');
+		$data['order_id'] = $this->session->data['order_id'];
+		//list of required fields for payment 
+		$data['required_fields'] = array(
+			'name' => 'cc_owner',
+			'credit_card_number' => 'cc_number', 
+			'credit_card_cvv2' => 'cc_cvv2',
+			'credit_card_expiration_month' => 'cc_expire_date_month',
+			'credit_card_expiration_year' => 'cc_expire_date_year'
+		);
+				
+		$data['process_rt'] = 'default_stripe/api_confirm';
+
+		$this->extensions->hk_UpdateData($this,__FUNCTION__);
+		$this->load->library('json');
+		$this->response->setOutput(AJson::encode($data));
+	}
+
+	public function api_confirm() {
+		//init controller data
+		$this->extensions->hk_InitData($this, __FUNCTION__);
+
+		$payment_controller = $this->dispatch( 'responses/extension/default_stripe/send' );
+
+		$result = $payment_controller->dispatchGetOutput();
+
+		$this->extensions->hk_UpdateData($this,__FUNCTION__);
+		$this->response->setOutput($result);
+	}
+}

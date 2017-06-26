@@ -5,7 +5,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright © 2011-2016 Belavier Commerce LLC
+  Copyright © 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   License details is bundled with this package in the file LICENSE.txt.
@@ -21,7 +21,7 @@ if (!defined('DIR_CORE') || !IS_ADMIN) {
 	header('Location: static_pages/');
 }
 class ControllerResponsesListingGridLanguage extends AController {
-
+	public $data = array();
 	public function main() {
 
 		//init controller data
@@ -31,8 +31,8 @@ class ControllerResponsesListingGridLanguage extends AController {
 		$this->loadModel('localisation/language');
 
 		//Prepare filter config
-		$filter_params = array( 'name', 'status' );
-		$grid_filter_params = array( 'name', 'code', 'sort_order' );
+		$filter_params = array_merge(array ('name', 'status'), (array)$this->data['filter_params']);
+		$grid_filter_params = array_merge(array ('name', 'code', 'sort_order'), (array)$this->data['grid_filter_params']);
 
 		$filter_form = new AFilter(array( 'method' => 'get', 'filter_params' => $filter_params ));
 		$filter_grid = new AFilter(array( 'method' => 'post', 'grid_filter_params' => $grid_filter_params ));
@@ -70,13 +70,13 @@ class ControllerResponsesListingGridLanguage extends AController {
 			);
 			$i++;
 		}
-
+		$this->data['response'] = $response;
 		//update controller data
 		$this->extensions->hk_UpdateData($this, __FUNCTION__);
 
 		$this->load->library('json');
 		$this->response->addJSONHeader();
-		$this->response->setOutput(AJson::encode($response));
+		$this->response->setOutput(AJson::encode($this->data['response']));
 	}
 
 	public function update() {
@@ -184,7 +184,7 @@ class ControllerResponsesListingGridLanguage extends AController {
 
 		$this->loadLanguage('localisation/language');
 		$this->loadModel('localisation/language');
-		$allowedFields = array( 'name', 'code', 'sort_order', 'status', 'locale','directory' );
+		$allowedFields = array_merge(array ('name', 'code', 'sort_order', 'status', 'locale','directory'), (array)$this->data['allowed_fields']);
 
 		if (isset($this->request->get[ 'id' ])) {
 			//request sent from edit form. ID in url

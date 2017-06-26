@@ -5,7 +5,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright © 2011-2016 Belavier Commerce LLC
+  Copyright © 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   License details is bundled with this package in the file LICENSE.txt.
@@ -59,6 +59,7 @@ class ACacheDriverFile extends ACacheDriver{
 			$lock_time = 10;
 		}
 		parent::__construct($expiration, $lock_time);
+		// note: path with slash at the end!
 		$this->path = DIR_CACHE;
 	}
 
@@ -130,7 +131,9 @@ class ACacheDriverFile extends ACacheDriver{
 			return true;
 		} else {
 			//something happen and data was not saved completely, need to remove file and fail.
-			@unlink($path);
+			if(file_exists($path)){
+				unlink($path);
+			}
 			return false;
 		}
 	}
@@ -172,8 +175,8 @@ class ACacheDriverFile extends ACacheDriver{
    				$return |= $this->_delete_directory($dirs[$i]);
     		}
 		} else if($group) {
-			if (is_dir($this->path . '/' . $group)){
-			    $return = $this->_delete_directory($this->path . '/' . $group);
+			if (is_dir($this->path . $group)){
+			    $return = $this->_delete_directory($this->path . $group);
 			}		
 		}
 
@@ -195,7 +198,9 @@ class ACacheDriverFile extends ACacheDriver{
 		foreach ($files as $file){
 			$time = @filemtime($file);
 			if (($time + $this->expire) < $this->now || empty($time)){
-				$result |= @unlink($file);
+				if(file_exists($file)){
+					$result |= @unlink($file);
+				}
 			}
 		}
 		return $result;
@@ -208,7 +213,7 @@ class ACacheDriverFile extends ACacheDriver{
 	 * @param   string   $group The cache data group
 	 * @param   integer  $locktime Cached item max lock time
 	 *
-	 * @return  boolean
+	 * @return  array
 	 *
 	 * @since   1.2.7
 	 */
@@ -264,6 +269,9 @@ class ACacheDriverFile extends ACacheDriver{
 	 */
 	public function unlock($key, $group = null) {
 		$path = $this->_buildFilePath($key, $group);
+		if(!is_file($path)){
+			return true;
+		}
 		$fileopen = @fopen($path, "r+b");
 		if ($fileopen){
 			$ret = @flock($fileopen, LOCK_UN);
@@ -352,6 +360,21 @@ class ACacheDriverFile extends ACacheDriver{
 			return false;
 		}
 
+		//check permissions before rename
+		if (!is_writable_dir($path)){
+			$err_text = sprintf('Error: Cannot delete cache folder: %s! Permission denied.', $path);
+			$error = new AError($err_text);
+			$error->toLog()->toDebug();
+			return false;
+		}
+		//rename folder to prevent recreation by other process
+		$new_path = $path.'_trash';
+		if(!is_dir($new_path)){
+			if(rename($path, $new_path)){
+				$path = $new_path;
+			}
+		}
+
 		// Remove all the files in folder if they exist; disable all filtering
 		$files = $this->_get_files($path, false, array(), array());
 		if (!empty($files) && !is_array($files)){
@@ -405,7 +428,7 @@ class ACacheDriverFile extends ACacheDriver{
 	 * @param   array    $exclude        Array with names of files which should be skipped
 	 * @param   array    $exclude_filter  Array of folder names to skip
 	 *
-	 * @return  array    Files in the given folder.
+	 * @return  array|false    Files in the given folder.
 	 *
 	 * @since   1.2.7
 	 */
@@ -457,7 +480,7 @@ class ACacheDriverFile extends ACacheDriver{
 	 * @param   array    $exclude        Array with names of folders which should not be shown in the result.
 	 * @param   array    $exclude_filter  Array with regular expressions matching folders which should not be shown in the result.
 	 *
-	 * @return  array  with full path sub-directories.
+	 * @return  array|false  with full path sub-directories.
 	 *
 	 * @since   1.2.7
 	 */

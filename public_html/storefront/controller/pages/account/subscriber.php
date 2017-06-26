@@ -5,7 +5,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright © 2011-2016 Belavier Commerce LLC
+  Copyright © 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   License details is bundled with this package in the file LICENSE.txt.
@@ -29,7 +29,7 @@ class ControllerPagesAccountSubscriber extends AController {
         $this->extensions->hk_InitData($this,__FUNCTION__);
 
 		if ($this->customer->isLogged()) {
-	  		$this->redirect($this->html->getSecureURL('account/notification'));
+	  		redirect($this->html->getSecureURL('account/notification'));
     	}
 		$this->loadModel('account/customer');
     	$this->loadLanguage('account/create');
@@ -40,20 +40,26 @@ class ControllerPagesAccountSubscriber extends AController {
 		$request_data = $this->request->post;
 
 		if ( $this->request->is_POST()) {
-			$this->error = $this->model_account_customer->validateSubscribeData($request_data);
+
+            if($this->csrftoken->isTokenValid()){
+                $this->error = $this->model_account_customer->validateSubscribeData($request_data);
+            } else {
+                $this->error['warning'] = $this->language->get('error_unknown');
+            }
 
     		if ( !$this->error ) {
-				// generate random password for subsribers only
+				// generate random password for subscribers only
 				$request_data['password'] = md5(mt_rand(0,10000)); //random password
 				$request_data['loginname'] = md5(time()); // loginname must be unique!
 				$request_data['newsletter'] = 1; // sign of subscriber
 				$request_data['status'] = 0; //disable login ability for subscribers
 				$request_data['customer_group_id'] = $this->model_account_customer->getSubscribersCustomerGroupId();
-				$request_data['ip'] = $this->request->server['REMOTE_ADDR'];
-
+				$request_data['ip'] = $this->request->getRemoteIP();
+			    //mark customer as subscriber for model
+			    $request_data['subscriber'] = true;
 				$this->model_account_customer->addCustomer($request_data);
 				$this->extensions->hk_UpdateData($this,__FUNCTION__);
-		  		$this->redirect($this->html->getSecureURL('account/subscriber','&success=1'));
+		  		redirect($this->html->getSecureURL('account/subscriber','&success=1'));
 	  		}
     	}
 
@@ -84,7 +90,7 @@ class ControllerPagesAccountSubscriber extends AController {
 																	));
 			$this->data['text_subscribe_register'] = $this->language->get('text_success_subscribe_heading');
 
-		}else{
+		} else {
 
 			if($this->config->get('prevent_email_as_login')){
 				$this->data['noemaillogin'] = true;
@@ -92,27 +98,39 @@ class ControllerPagesAccountSubscriber extends AController {
 
 			$form = new AForm();
 			$form->setForm(array( 'form_name' => 'SubscriberFrm' ));
-			$this->data['form'][ 'form_open' ] = $form->getFieldHtml(
-																	array(
-																		   'type' => 'form',
-																		   'name' => 'SubscriberFrm',
-																		   'action' => $this->html->getSecureURL('account/subscriber')));
+			$this->data['form']['form_open'] = $form->getFieldHtml(
+                array(
+                    'type' => 'form',
+                    'name' => 'SubscriberFrm',
+                    'action' => $this->html->getSecureURL('account/subscriber'),
+                    'csrf' => true
+                )
+            );
 
-			$this->data['form'][ 'firstname' ] = $form->getFieldHtml( array(
-																		   'type' => 'input',
-																		   'name' => 'firstname',
-																		   'value' => $this->request->post['firstname'],
-																		   'required' => true ));
-			$this->data['form'][ 'lastname' ] = $form->getFieldHtml( array(
-																		   'type' => 'input',
-																		   'name' => 'lastname',
-																		   'value' => $this->request->post['lastname'],
-																		   'required' => true ));
-			$this->data['form'][ 'email' ] = $form->getFieldHtml( array(
-																		   'type' => 'input',
-																		   'name' => 'email',
-																		   'value' => $this->request->get_or_post('email'),
-																		   'required' => true ));
+			$this->data['form'][ 'firstname' ] = $form->getFieldHtml(
+			    array(
+                   'type' => 'input',
+                   'name' => 'firstname',
+                   'value' => $this->request->post['firstname'],
+                   'required' => true
+                )
+            );
+			$this->data['form'][ 'lastname' ] = $form->getFieldHtml(
+			    array(
+                   'type' => 'input',
+                   'name' => 'lastname',
+                   'value' => $this->request->post['lastname'],
+                   'required' => true
+                )
+            );
+			$this->data['form'][ 'email' ] = $form->getFieldHtml(
+			    array(
+                   'type' => 'input',
+                   'name' => 'email',
+                   'value' => $this->request->get_or_post('email'),
+                   'required' => true
+                )
+            );
 
 			if($this->config->get('config_recaptcha_site_key')) {
 				$this->data['form']['captcha'] = $form->getFieldHtml(
@@ -124,37 +142,39 @@ class ControllerPagesAccountSubscriber extends AController {
 					)
 				);			
 			} else {
-				$this->data['form']['captcha'] = $form->getFieldHtml( array(
-																			'type'=>'captcha',
-					                                               			'name' =>'captcha',
-																			'required' => true
-																		));
+				$this->data['form']['captcha'] = $form->getFieldHtml(
+				    array(
+                        'type'=>'captcha',
+                        'name' =>'captcha',
+                        'required' => true
+                    )
+                );
 			}
 
-			$this->data[ 'continue' ] = $form->getFieldHtml( array(
-																	'type' => 'submit',
-																	'name' => $this->language->get('button_continue'),
-																	'icon' => 'fa fa-check',
-																	'style' => 'btn-orange'
-			));
+			$this->data[ 'continue' ] = $form->getFieldHtml(
+			    array(
+                    'type' => 'submit',
+                    'name' => $this->language->get('button_continue'),
+                    'icon' => 'fa fa-check',
+                    'style' => 'btn-orange'
+			    )
+            );
 
-
-			$this->data[ 'create_account' ] = $form->getFieldHtml( array(
-																	'type' => 'button',
-																	'text' => $this->language->get('text_customer_registration'),
-																	'href' => $this->html->getSecureURL('account/create'),
-																	'icon' => 'fa fa-user',
-			));
-
+			$this->data[ 'create_account' ] = $form->getFieldHtml(
+			    array(
+                    'type' => 'button',
+                    'text' => $this->language->get('text_customer_registration'),
+                    'href' => $this->html->getSecureURL('account/create'),
+                    'icon' => 'fa fa-user',
+			    )
+            );
 
 			$this->data['error_warning'] = $this->error['warning'];
-
 			$this->data['error_firstname'] = $this->error['firstname'];
 			$this->data['error_lastname'] = $this->error['lastname'];
 			$this->data['error_email'] = $this->error['email'];
 			$this->data['error_confirm'] = $this->error['confirm'];
 			$this->data['error_captcha'] = $this->error['captcha'];
-
 
 			if ($this->config->get('config_account_id')) {
 

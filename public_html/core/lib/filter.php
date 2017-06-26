@@ -5,7 +5,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright © 2011-2016 Belavier Commerce LLC
+  Copyright © 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   License details is bundled with this package in the file LICENSE.txt.
@@ -89,7 +89,8 @@ final class AFilter{
 			$fl_str = array ();
 			foreach ($keys_arr as $kk => $filter){
 				$value = isset($this->request->{$this->method}[$filter]) ? $this->request->{$this->method}[$filter] : false;
-				if ($value == ''){
+				//set null as non-set value. 0 - is value!!!
+				if ($value === '' || $value === false || $value === array()){
 					$value = null;
 				}
 				if (isset($value) && !is_null($value)){
@@ -291,6 +292,8 @@ final class AGrid{
 						case 'cn' :
 							$str = "LOWER(" . $str . ")";
 							$rule['data'] = mb_strtolower($rule['data']);
+							//search encoded
+							$rule['data'] = htmlentities($rule['data'],ENT_QUOTES,"UTF-8");
 							$str .= " LIKE '%" . $this->db->escape($rule['data']) . "%' ";
 							break;
 						default:

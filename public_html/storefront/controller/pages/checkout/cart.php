@@ -5,7 +5,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright © 2011-2016 Belavier Commerce LLC
+  Copyright © 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   License details is bundled with this package in the file LICENSE.txt.
@@ -21,6 +21,10 @@ if (!defined('DIR_CORE')){
 	header('Location: static_pages/');
 }
 
+/**
+ * Class ControllerPagesCheckoutCart
+ * @property AWeight $weight
+ */
 class ControllerPagesCheckoutCart extends AController{
 	public $error = array ();
 	public $data = array ();
@@ -58,45 +62,57 @@ class ControllerPagesCheckoutCart extends AController{
 				$quantity = 1;
 			}
 
-			unset($this->session->data['shipping_methods']);
-			unset($this->session->data['shipping_method']);
-			unset($this->session->data['payment_methods']);
-			unset($this->session->data['payment_method']);
+			$this->_unset_methods_data_in_session();
 
 			$this->cart->add($this->request->get['product_id'], $quantity, $option);
 			$this->extensions->hk_ProcessData($this, 'add_product');
-			$this->redirect($this->html->getSecureURL($cart_rt));
+			redirect($this->html->getSecureURL($cart_rt));
 
 		} else if ($this->request->is_GET() && isset($this->request->get['remove'])){
 
-			//remove product with button claick.
+			//remove product with button click.
 			$this->cart->remove($this->request->get['remove']);
 			$this->extensions->hk_ProcessData($this, 'remove_product');
-			$this->redirect($this->html->getSecureURL($cart_rt));
+			redirect($this->html->getSecureURL($cart_rt));
 
 		} else if ($this->request->is_POST()){
-
+            $post = $this->request->post;
 			//if this is coupon, validate and apply
-			if (isset($this->request->post['coupon']) && $this->_validateCoupon()){
-				$this->session->data['coupon'] = $this->request->post['coupon'];
-				$this->data['success'] = $this->session->data['success'] = $this->language->get('text_coupon_success');
-				unset($this->session->data['success']);
-				//process data
-				$this->extensions->hk_ProcessData($this, 'apply_coupon');
-			}
+            if((isset($post['reset_coupon']) || isset($post['coupon'])) && !$this->csrftoken->isTokenValid()){
+                $this->error['error_warning'] = $this->language->get('error_unknown');
+            } else {
+                if (isset($post['reset_coupon'])){
+                    //remove coupon
+                    unset($this->session->data['coupon']);
+                    $this->data['success'] = $this->language->get('text_coupon_removal');
+                    unset($this->session->data['success']);
+                    $this->reapplyBalance();
+                    //process data
+                    $this->extensions->hk_ProcessData($this, 'reset_coupon');
+
+                } else if (isset($post['coupon']) && $this->_validateCoupon()){
+                    $this->session->data['coupon'] = $post['coupon'];
+                    $this->data['success'] = $this->language->get('text_coupon_success');
+                    unset($this->session->data['success']);
+                    $this->reapplyBalance();
+                    //process data
+                    $this->extensions->hk_ProcessData($this, 'apply_coupon');
+                }
+            }
+
 			if ($this->error['error_warning']){
 				$error_msg[] = $this->error['error_warning'];
 			}
 
-			if (isset($this->request->post['quantity'])){
+			if (isset($post['quantity'])){
 				//we update cart
-				if (!is_array($this->request->post['quantity'])){
+				if (!is_array($post['quantity'])){
 
 					$this->loadModel('catalog/product', 'storefront');
-					$product_id = $this->request->post['product_id'];
+					$product_id = $post['product_id'];
 
-					if (isset($this->request->post['option'])){
-						$options = $this->request->post['option'];
+					if (isset($post['option'])){
+						$options = $post['option'];
 					} else{
 						$options = array ();
 					}
@@ -119,7 +135,7 @@ class ControllerPagesCheckoutCart extends AController{
 
 							if ($attribute_data['required'] && !$this->request->files['option']['size'][$id]){
 								$this->session->data['error'] = $this->language->get('error_required_options');
-								$this->redirect($_SERVER['HTTP_REFERER']);
+								redirect($_SERVER['HTTP_REFERER']);
 							}
 
 							$file_data = array (
@@ -136,13 +152,13 @@ class ControllerPagesCheckoutCart extends AController{
 
 							if (has_value($file_errors)){
 								$this->session->data['error'] = implode('<br/>', $file_errors);
-								$this->redirect($_SERVER['HTTP_REFERER']);
+								redirect($_SERVER['HTTP_REFERER']);
 							} else{
 								$result = move_uploaded_file($file_data['tmp_name'], $file_path_info['path']);
 
 								if (!$result || $this->request->files['package_file']['error']){
 									$this->session->data['error'] .= '<br>Error: ' . getTextUploadError($this->request->files['option']['error'][$id]);
-									$this->redirect($_SERVER['HTTP_REFERER']);
+									redirect($_SERVER['HTTP_REFERER']);
 								}
 							}
 
@@ -164,26 +180,21 @@ class ControllerPagesCheckoutCart extends AController{
 					if ($text_errors = $this->model_catalog_product->validateProductOptions($product_id, $options)){
 						$this->session->data['error'] = $text_errors;
 						//send options values back via _GET
-						$url = '&' . http_build_query(array ('option' => $this->request->post['option']));
-						$this->redirect($this->html->getSecureURL($product_rt, '&product_id=' . $this->request->post['product_id'] . $url));
+						$url = '&' . http_build_query(array ('option' => $post['option']));
+						redirect($this->html->getSecureURL($product_rt, '&product_id=' . $post['product_id'] . $url));
 					}
 
-					$this->cart->add($this->request->post['product_id'], $this->request->post['quantity'], $options);
+					$this->cart->add($post['product_id'], $post['quantity'], $options);
 				} else{
-					foreach ($this->request->post['quantity'] as $key => $value){
+					foreach ($post['quantity'] as $key => $value){
 						$this->cart->update($key, $value);
 					}
 				}
-
-				unset($this->session->data['shipping_methods']);
-				unset($this->session->data['shipping_method']);
-				unset($this->session->data['payment_methods']);
-				unset($this->session->data['payment_method']);
-
+				$this->_unset_methods_data_in_session();
 			}
 
-			if (isset($this->request->post['remove'])){
-				foreach (array_keys($this->request->post['remove']) as $key){
+			if (isset($post['remove'])){
+				foreach (array_keys($post['remove']) as $key){
 					$this->cart->remove($key);
 				}
 			}
@@ -191,21 +202,17 @@ class ControllerPagesCheckoutCart extends AController{
 			$this->extensions->hk_ProcessData($this);
 
 			//next page is requested after cart update
-			if (isset($this->request->post['next_step'])){
-				$this->redirect($this->html->getSecureURL($this->request->post['next_step']));
+			if (isset($post['next_step'])){
+				redirect($this->html->getSecureURL($post['next_step']));
 			}
 
-			if (isset($this->request->post['redirect'])){
-				$this->session->data['redirect'] = $this->request->post['redirect'];
+			if (isset($post['redirect'])){
+				$this->session->data['redirect'] = $post['redirect'];
 			}
 
-			if (isset($this->request->post['quantity']) || isset($this->request->post['remove'])){
-				unset($this->session->data['shipping_methods']);
-				unset($this->session->data['shipping_method']);
-				unset($this->session->data['payment_methods']);
-				unset($this->session->data['payment_method']);
-
-				$this->redirect($this->html->getSecureURL($cart_rt));
+			if (isset($post['quantity']) || isset($post['remove'])){
+				$this->_unset_methods_data_in_session();
+				redirect($this->html->getSecureURL($cart_rt));
 			}
 		}
 
@@ -246,23 +253,23 @@ class ControllerPagesCheckoutCart extends AController{
 
 			$cart_products = $this->cart->getProducts();
 
-			$product_ids = array();
-			foreach($cart_products as $result){
+			$product_ids = array ();
+			foreach ($cart_products as $result){
 				$product_ids[] = (int)$result['product_id'];
 			}
 
 			$resource = new AResource('image');
 			$thumbnails = $resource->getMainThumbList(
-							'products',
-							$product_ids,
-							$this->config->get('config_image_cart_width'),
-							$this->config->get('config_image_cart_height')
+					'products',
+					$product_ids,
+					$this->config->get('config_image_cart_width'),
+					$this->config->get('config_image_cart_height')
 			);
 
 			$products = array ();
 			foreach ($cart_products as $result){
 				$option_data = array ();
-				$thumbnail = $thumbnails[ $result['product_id'] ];
+				$thumbnail = $thumbnails[$result['product_id']];
 				foreach ($result['option'] as $option){
 					$title = '';
 					if ($option['element_type'] == 'H'){
@@ -293,6 +300,8 @@ class ControllerPagesCheckoutCart extends AController{
 					);
 				}
 
+				$price_with_tax = $this->tax->calculate($result['price'], $result['tax_class_id'], $this->config->get('config_tax'));
+
 				$products[] = array (
 						'remove'     => $form->getFieldHtml(
 								array (
@@ -314,8 +323,8 @@ class ControllerPagesCheckoutCart extends AController{
 										'style' => 'short'
 								)),
 						'stock'      => $result['stock'],
-						'price'      => $this->currency->format($this->tax->calculate($result['price'], $result['tax_class_id'], $this->config->get('config_tax'))),
-						'total'      => $this->currency->format($this->tax->calculate($result['total'], $result['tax_class_id'], $this->config->get('config_tax'))),
+						'price'      => $this->currency->format($price_with_tax),
+						'total'      => $this->currency->format_total($price_with_tax, $result['quantity']),
 						'href'       => $this->html->getSEOURL($product_rt, '&key=' . $result['key'], true)
 				);
 			}
@@ -332,7 +341,6 @@ class ControllerPagesCheckoutCart extends AController{
 							'name'  => 'checkout',
 							'text'  => $this->language->get('button_checkout'),
 							'style' => 'button'));
-
 
 			if ($this->config->get('config_cart_weight')){
 				$this->data['weight'] = $this->weight->format($this->cart->getWeight(), $this->config->get('config_weight_class'));
@@ -394,6 +402,8 @@ class ControllerPagesCheckoutCart extends AController{
 			}
 			//try to get shipping address details if we have them
 			$country_id = $this->config->get('config_country_id');
+			$postcode = $zone_id = '';
+			$zone_data = array();
 			if ($this->session->data['shipping_address_id']){
 				$this->loadModel('account/address', 'storefront');
 				$shipping_address = $this->model_account_address->getAddress($this->session->data['shipping_address_id']);
@@ -449,7 +459,11 @@ class ControllerPagesCheckoutCart extends AController{
 					));
 
 			if ($this->session->data['error']){
-				$error_msg[] = $this->session->data['error'];
+				if(is_array($this->session->data['error'])){
+					$error_msg = array_merge($error_msg, $this->session->data['error']);
+				}else{
+					$error_msg[] = $this->session->data['error'];
+				}
 				unset($this->session->data['error']);
 			}
 
@@ -497,4 +511,44 @@ class ControllerPagesCheckoutCart extends AController{
 		}
 	}
 
+	public function reapplyBalance(){
+		$session =& $this->session->data;
+		unset($session['used_balance'], $this->request->get['balance'], $session['used_balance_full']);
+		$balance = $this->currency->convert($this->customer->getBalance(), $this->config->get('config_currency'), $session['currency']);
+		$order_totals = $this->cart->buildTotalDisplay(true);
+		$order_total = $order_totals['total'];
+		if ($session['used_balance']){
+			#check if we still have balance.
+			if ($session['used_balance'] <= $balance){
+				$session['used_balance_full'] = true;
+			} else{
+				//if balance become less or 0 reapply partial
+				$session['used_balance'] = $balance;
+				$session['used_balance_full'] = false;
+			}
+		} else if ($balance > 0){
+			if ($balance >= $order_total){
+				$session['used_balance'] = $order_total;
+				$session['used_balance_full'] = true;
+
+			} else{ //partial pay
+				$session['used_balance'] = $balance;
+				$session['used_balance_full'] = false;
+			}
+		}
+		//if balance enough to cover order amount
+		if ($session['used_balance_full']){
+			$session['payment_method'] = array (
+					'id'    => 'no_payment_required',
+					'title' => $this->language->get('no_payment_required')
+			);
+		}
+	}
+
+	private function _unset_methods_data_in_session(){
+		unset($this->session->data['shipping_methods'],
+			  $this->session->data['shipping_method'],
+			  $this->session->data['payment_methods'],
+			  $this->session->data['payment_method']);
+	}
 }

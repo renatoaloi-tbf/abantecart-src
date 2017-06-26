@@ -5,7 +5,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright © 2011-2016 Belavier Commerce LLC
+  Copyright © 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   License details is bundled with this package in the file LICENSE.txt.
@@ -24,84 +24,88 @@ if (!defined('DIR_CORE')){
 /**
  * Class ACustomer
  */
-final class ACustomer{
+class ACustomer{
 	/**
 	 * @var int
 	 */
-	private $customer_id;
+	protected $customer_id;
 	/**
 	 * @var string
 	 */
-	private $loginname;
+	protected $loginname;
 	/**
 	 * @var string
 	 */
-	private $firstname;
+	protected $firstname;
 	/**
 	 * @var string
 	 */
-	private $lastname;
+	protected $lastname;
 	/**
 	 * @var string
 	 */
-	private $email;
+	protected $email;
 	/**
 	 * @var string
 	 */
-	private $telephone;
+	protected $telephone;
 	/**
 	 * @var string
 	 */
-	private $fax;
+	protected $fax;
 	/**
 	 * @var int
 	 */
-	private $newsletter;
+	protected $newsletter;
 	/**
 	 * @var int
 	 */
-	private $customer_group_id;
+	protected $customer_group_id;
 	/**
 	 * @var string
 	 */
-	private $customer_group_name;
+	protected $customer_group_name;
 	/**
 	 * @var bool
 	 */
-	private $customer_tax_exempt;
+	protected $customer_tax_exempt;
 	/**
 	 * @var int
 	 */
-	private $address_id;
+	protected $address_id;
 	/**
 	 * @var AConfig
 	 */
-	private $config;
+	protected $config;
 	/**
 	 * @var ACache
 	 */
-	private $cache;
+	protected $cache;
 	/**
 	 * @var ADB
 	 */
-	private $db;
+	protected $db;
 	/**
 	 * @var ARequest
 	 */
-	private $request;
+	protected $request;
 	/**
 	 * @var ASession
 	 */
-	private $session;
+	protected $session;
 	/**
 	 * @var ADataEncryption
 	 */
-	private $dcrypt;
+	protected $dcrypt;
+	/**
+	 * @var ExtensionsApi
+	 */
+	protected $extensions;
 
 	/**
-	 * @var Array (unauthenticated customer details)
+	 * @var array (unauthenticated customer details)
 	 */
-	private $unauth_customer = array ();
+	protected $unauth_customer = array ();
 
 	/**
 	 * @param  Registry $registry
@@ -114,6 +118,8 @@ final class ACustomer{
 		$this->session = $registry->get('session');
 		$this->dcrypt = $registry->get('dcrypt');
 		$this->load = $registry->get('load');
+		$this->extensions = $registry->get('extensions');
+
 
 		if (isset($this->session->data['customer_id'])){
 			$customer_data = $this->db->query(
@@ -124,25 +130,7 @@ final class ACustomer{
 			);
 
 			if ($customer_data->num_rows){
-				$this->customer_id = $customer_data->row['customer_id'];
-				$this->loginname = $customer_data->row['loginname'];
-				$this->firstname = $customer_data->row['firstname'];
-				$this->lastname = $customer_data->row['lastname'];
-				if ($this->dcrypt->active){
-					$this->email = $this->dcrypt->decrypt_field($customer_data->row['email'], $customer_data->row['key_id']);
-					$this->telephone = $this->dcrypt->decrypt_field($customer_data->row['telephone'], $customer_data->row['key_id']);
-					$this->fax = $this->dcrypt->decrypt_field($customer_data->row['fax'], $customer_data->row['key_id']);
-				} else{
-					$this->email = $customer_data->row['email'];
-					$this->telephone = $customer_data->row['telephone'];
-					$this->fax = $customer_data->row['fax'];
-				}
-				$this->newsletter = (int)$customer_data->row['newsletter'];
-				$this->customer_group_id = $customer_data->row['customer_group_id'];
-				$this->customer_group_name = $customer_data->row['name'];
-				$this->customer_tax_exempt = $customer_data->row['tax_exempt'];
-				$this->address_id = $customer_data->row['address_id'];
-
+                $this->_customer_init($customer_data->row);
 			} else{
 				$this->logout();
 			}
@@ -169,10 +157,7 @@ final class ACustomer{
 		}
 
 		//Update online customers' activity
-		$ip = '';
-		if (isset($this->request->server['REMOTE_ADDR'])){
-			$ip = $this->request->server['REMOTE_ADDR'];
-		}
+		$ip = $this->request->getRemoteIP();
 		$url = '';
 		if (isset($this->request->server['HTTP_HOST']) && isset($this->request->server['REQUEST_URI'])){
 			$url = 'http://' . $this->request->server['HTTP_HOST'] . $this->request->server['REQUEST_URI'];
@@ -189,7 +174,8 @@ final class ACustomer{
 		}
 		$this->load->model('tool/online_now');
 		$registry->get('model_tool_online_now')->setOnline($ip, $customer_id, $url, $referer);
-		//EOF Custmer Construct				
+		//call hooks
+		$this->extensions->hk_ProcessData($this, 'constructor', $customer_id);
 	}
 
 	/**
@@ -204,7 +190,7 @@ final class ACustomer{
 			$approved_only = " AND approved = '1'";
 		}
 
-		//Supports older passords for upgraded/migrated stores prior to 1.2.8
+		//Supports older passwords for upgraded/migrated stores prior to 1.2.8
 		$add_pass_sql = '';
 		if (defined('SALT')){
 			$add_pass_sql = "OR password = '" . $this->db->escape(md5($password . SALT)) . "'";
@@ -220,52 +206,80 @@ final class ACustomer{
 											)
 											AND status = '1'" . $approved_only);
 		if ($customer_data->num_rows){
-			$this->customer_id = $this->session->data['customer_id'] = $customer_data->row['customer_id'];
+            $this->_customer_init($customer_data->row);
+			$this->session->data['customer_id'] = $this->customer_id;
 
-			//load customer saved cart and merge with session cart before login
+            //load customer saved cart and merge with session cart before login
 			$cart = $this->getCustomerCart();
 			$this->mergeCustomerCart($cart);
 			//save merged cart
 			$this->saveCustomerCart();
 
-			$this->loginname = $loginname;
-			$this->firstname = $customer_data->row['firstname'];
-			$this->lastname = $customer_data->row['lastname'];
-			if ($this->dcrypt->active){
-				$this->email = $this->dcrypt->decrypt_field($customer_data->row['email'], $customer_data->row['key_id']);
-				$this->telephone = $this->dcrypt->decrypt_field($customer_data->row['telephone'], $customer_data->row['key_id']);
-				$this->fax = $this->dcrypt->decrypt_field($customer_data->row['fax'], $customer_data->row['key_id']);
-			} else{
-				$this->email = $customer_data->row['email'];
-				$this->telephone = $customer_data->row['telephone'];
-				$this->fax = $customer_data->row['fax'];
-			}
-			$this->newsletter = $customer_data->row['newsletter'];
-			$this->customer_group_id = $customer_data->row['customer_group_id'];
-
-			$this->address_id = $customer_data->row['address_id'];
-
 			//set cookie for unauthenticated user (expire in 1 year)
 			$encryption = new AEncryption($this->config->get('encryption_key'));
-			$cutomer_data = $encryption->encrypt(serialize(array (
+			$customer_data = $encryption->encrypt(serialize(array (
 					'first_name'  => $this->firstname,
 					'customer_id' => $this->customer_id,
 					'script_name' => $this->request->server['SCRIPT_NAME']
 			)));
 			//Set cookie for this customer to track unauthenticated activity, expire in 1 year
 			setcookie('customer',
-					$cutomer_data,
+					$customer_data,
 					time() + 60 * 60 * 24 * 365,
 					dirname($this->request->server['PHP_SELF']),
 					null,
 					(defined('HTTPS') && HTTPS),
 					true
 			);
-
+			//set date of login
+			$this->setLastLogin($this->customer_id);
+			$this->extensions->hk_ProcessData($this, 'login_success', $customer_data);
 			return true;
 		} else{
+			$this->extensions->hk_ProcessData($this, 'login_failed');
 			return false;
 		}
+	}
+
+    /**
+     * Init customer
+     *
+     * @param $data array
+     * @return void
+     */
+    private function _customer_init($data){
+
+        $this->customer_id = (int)$data['customer_id'];
+        $this->loginname = $data['loginname'];
+        $this->firstname = $data['firstname'];
+        $this->lastname = $data['lastname'];
+        if ($this->dcrypt->active){
+            $this->email = $this->dcrypt->decrypt_field($data['email'], $data['key_id']);
+            $this->telephone = $this->dcrypt->decrypt_field($data['telephone'], $data['key_id']);
+            $this->fax = $this->dcrypt->decrypt_field($data['fax'], $data['key_id']);
+        } else{
+            $this->email = $data['email'];
+            $this->telephone = $data['telephone'];
+            $this->fax = $data['fax'];
+        }
+        $this->newsletter = (int)$data['newsletter'];
+        $this->customer_group_id = (int)$data['customer_group_id'];
+        $this->customer_group_name = $data['name'];
+        $this->customer_tax_exempt = $data['tax_exempt'];
+        $this->address_id = (int)$data['address_id'];
+
+        $this->db->query("SET @CUSTOMER_ID = '" . (int)$this->customer_id . "'");
+    }
+
+	public function setLastLogin($customer_id){
+		$customer_id = (int)$customer_id;
+		if(!$customer_id) { return false; }
+
+		//insert new record
+		$this->db->query("UPDATE `" . $this->db->table("customers") . "`
+                        SET `last_login` = NOW()
+                        WHERE customer_id = ".$customer_id);
+		return true;
 	}
 
 	/**
@@ -290,6 +304,7 @@ final class ACustomer{
 		//expire unauth cookie
 		unset($_COOKIE['customer']);
 		setcookie('customer', '', time() - 3600, dirname($this->request->server['PHP_SELF']));
+		$this->extensions->hk_ProcessData($this, 'logout');
 	}
 
 	/**
@@ -446,7 +461,7 @@ final class ACustomer{
 		if ($format == ''){
 			$format = '{firstname} {lastname}' . "\n" . '{company}' . "\n" . '{address_1}' . "\n" . '{address_2}' . "\n" . '{city} {postcode}' . "\n" . '{zone}' . "\n" . '{country}';
 		}
-		//Set default varialble to be set for address based on the data
+		//Set default variable to be set for address based on the data
 		if (count($locate) <= 0){
 			$locate = array ();
 			foreach ($data_array as $key => $value){
@@ -522,7 +537,7 @@ final class ACustomer{
 		$this->db->query("UPDATE " . $this->db->table("customers") . "
        	                  SET
        	                        cart = '" . $this->db->escape(serialize($cart)) . "',
-       	                        ip = '" . $this->db->escape($this->request->server['REMOTE_ADDR']) . "'
+       	                        ip = '" . $this->db->escape($this->request->getRemoteIP()) . "'
        	                  WHERE customer_id = '" . (int)$customer_id . "'");
 	}
 
@@ -663,7 +678,7 @@ final class ACustomer{
 	 * @param array $cart_data
 	 * @return bool
 	 */
-	private function _is_new_cart_format($cart_data = array ()){
+	protected function _is_new_cart_format($cart_data = array ()){
 		if (empty($cart_data)){
 			return false;
 		}
@@ -719,13 +734,14 @@ final class ACustomer{
 			$customer_id = $this->unauth_customer['customer_id'];
 		}
 		if (!$customer_id){
-			return null;
+			return false;
 		}
 		$this->db->query("UPDATE " . $this->db->table("customers") . "
 							SET
 								wishlist = '" . $this->db->escape(serialize($whishlist)) . "',
-								ip = '" . $this->db->escape($this->request->server['REMOTE_ADDR']) . "'
+								ip = '" . $this->db->escape($this->request->getRemoteIP()) . "'
 							WHERE customer_id = '" . (int)$customer_id . "'");
+		return true;
 	}
 
 	/**
@@ -758,7 +774,7 @@ final class ACustomer{
 	 * @param array $tr_details - amount, order_id, transaction_type, description, comments, creator
 	 * @return bool
 	 */
-	private function _record_transaction($type, $tr_details){
+	protected function _record_transaction($type, $tr_details){
 
 		if (!$this->isLogged()){
 			return false;

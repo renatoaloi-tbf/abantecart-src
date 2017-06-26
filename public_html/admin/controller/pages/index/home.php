@@ -5,7 +5,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright © 2011-2016 Belavier Commerce LLC
+  Copyright © 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   License details is bundled with this package in the file LICENSE.txt.
@@ -203,7 +203,7 @@ class ControllerPagesIndexHome extends AController {
 			$this->view->assign('tip_content', $tip_content);
 		}
 
-		//check quick start quide based on no last_login and if it is not yet completed
+		//check quick start guide based on no last_login and if it is not yet completed
 		if( !$this->user->getLastLogin() && $this->session->data['quick_start_step'] != 'finished') {
 			$store_id = !isset($this->session->data['current_store_id']) ? 0 : $this->session->data['current_store_id'];
 			$resources_scripts = $this->dispatch(

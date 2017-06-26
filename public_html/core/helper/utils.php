@@ -5,7 +5,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright © 2011-2016 Belavier Commerce LLC
+  Copyright © 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   License details is bundled with this package in the file LICENSE.txt.
@@ -23,32 +23,6 @@ if (!defined('DIR_CORE')) {
 
 function isFunctionAvailable($func_name) {
 	return function_exists($func_name);
-}
-
-/*
- * function abs with locale support
- * */
-function localeAbs($value, $decimal_point = '.')
-{
-	$value_locale = $value;
-	if ($decimal_point != '.' && strstr($value_locale, $decimal_point)) {
-		$value_locale = str_replace('.', '', $value_locale);
-		$value_locale = str_replace($decimal_point, '.', $value_locale);
-		// doing abs() keeping locale format of decimal point
-		$value = str_replace('.', $decimal_point, abs($value_locale));
-	}
-	return $value;
-}
-
-/*
- * prepare float to display according to locale decimal point configuration
- * */
-function localeDisplayFloat($value, $decimal_point = '.') {
-	if ($decimal_point != '.' && strstr($value, '.')) {
-		$value = str_replace($decimal_point, '~', $value);
-		$value = str_replace('.', $decimal_point, $value);
-	}
-	return $value;
 }
 
 /*
@@ -137,9 +111,9 @@ function is_serialized ($value) {
 	}
 	$test_data = @unserialize($value);
 	if ($value === 'b:0;' || $test_data !== false) {
-	    return true;
+		return true;
 	} else {
-	    return false;
+		return false;
 	}
 }
 
@@ -148,11 +122,12 @@ function is_serialized ($value) {
  * */
 function is_multi ($array) {
 	if ($array === (array)$array && count($array) != count($array, COUNT_RECURSIVE)) {
-	    return true;
+		return true;
 	} else {
-	    return false;
+		return false;
 	}
 }
+
  
 /*
 *
@@ -163,10 +138,9 @@ function is_multi ($array) {
  * @param $string_value
  * @param string $object_key_name
  * @param int $object_id
- * @param int $language_id
  * @return string
  */
-function SEOEncode($string_value, $object_key_name='', $object_id=0, $language_id=0) {
+function SEOEncode($string_value, $object_key_name='', $object_id=0) {
 	$seo_key = html_entity_decode($string_value, ENT_QUOTES, 'UTF-8');
 	$seo_key = preg_replace('/[^\pL\p{Zs}0-9\s\-_]+/u', '', $seo_key);
 	$seo_key = trim(mb_strtolower($seo_key));
@@ -186,9 +160,7 @@ function SEOEncode($string_value, $object_key_name='', $object_id=0, $language_i
  * @return string
  */
 function getUniqueSeoKeyword($seo_key, $object_key_name='', $object_id=0){
-
 	$object_id=(int)$object_id;
-
 	$registry = Registry::getInstance();
 	$db = $registry->get('db');
 	$sql = "SELECT `keyword`
@@ -219,12 +191,12 @@ function getUniqueSeoKeyword($seo_key, $object_key_name='', $object_id=0){
 * Echo array with readable formal. Useful in debugging of array data. 
 */
 function echo_array($array_data) {
-	$wrapper = '<div class="debug_alert salert alert-info alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>';	
+	$wrapper = '<div class="debug_alert alert alert-info alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>';
 	echo $wrapper;
-	echo "<pre>";// $sub_table_name: ";
+	echo "<pre>";
 	print_r($array_data);
 	echo'</pre>';
-	echo'</div>';	
+	echo'</div>';
 }
 
 
@@ -251,7 +223,7 @@ function getFilesInDir($dir, $file_ext = '') {
 }
 
 //Custom function for version compare between store version and extensions
-//NOTE: Function will return false if major versions donot match. 
+//NOTE: Function will return false if major versions do not match.
 function versionCompare($version1, $version2, $operator) {
 	$version1 = explode('.', preg_replace('/[^0-9\.]/', '', $version1));
 	$version2 = explode('.', preg_replace('/[^0-9\.]/', '', $version2));
@@ -437,7 +409,7 @@ function dateFromFormat($string_date, $date_format, $timezone = null) {
 		$iso_date = DateTime::createFromFormat($date_format, $string_date, $timezone);
 		$result = $iso_date ? $iso_date->getTimestamp() : null;
 	}else{
-		$iso_date = DateTimeCreateFromFormat($date_format, $string_date, $timezone);
+		$iso_date = DateTimeCreateFromFormat($date_format, $string_date);
 		$result = $iso_date ? $iso_date : null;
 	}
 	return $result;
@@ -453,23 +425,23 @@ function dateFromFormat($string_date, $date_format, $timezone = null) {
  */
 function DateTimeCreateFromFormat($date_format, $string_date) {
 	// convert date format first from format of date() to format of strftime()
-    $caracs = array(
-        // Day - no strf eq : S
-        'd' => '%d', 'D' => '%a', 'j' => '%e', 'l' => '%A', 'N' => '%u', 'w' => '%w', 'z' => '%j',
-        // Week - no date eq : %U, %W
-        'W' => '%V',
-        // Month - no strf eq : n, t
-        'F' => '%B', 'm' => '%m', 'M' => '%b',
-        // Year - no strf eq : L; no date eq : %C, %g
-        'o' => '%G', 'Y' => '%Y', 'y' => '%y',
-        // Time - no strf eq : B, G, u; no date eq : %r, %R, %T, %X
-        'a' => '%P', 'A' => '%p', 'g' => '%l', 'h' => '%I', 'H' => '%H', 'i' => '%M', 's' => '%S',
-        // Timezone - no strf eq : e, I, P, Z
-        'O' => '%z', 'T' => '%Z',
-        // Full Date / Time - no strf eq : c, r; no date eq : %c, %D, %F, %x
-        'U' => '%s'
-    );
-    $strftime_format = strtr((string)$date_format, $caracs);
+	$chars = array(
+		// Day - no strf eq : S
+		'd' => '%d', 'D' => '%a', 'j' => '%e', 'l' => '%A', 'N' => '%u', 'w' => '%w', 'z' => '%j',
+		// Week - no date eq : %U, %W
+		'W' => '%V',
+		// Month - no strf eq : n, t
+		'F' => '%B', 'm' => '%m', 'M' => '%b',
+		// Year - no strf eq : L; no date eq : %C, %g
+		'o' => '%G', 'Y' => '%Y', 'y' => '%y',
+		// Time - no strf eq : B, G, u; no date eq : %r, %R, %T, %X
+		'a' => '%P', 'A' => '%p', 'g' => '%l', 'h' => '%I', 'H' => '%H', 'i' => '%M', 's' => '%S',
+		// Timezone - no strf eq : e, I, P, Z
+		'O' => '%z', 'T' => '%Z',
+		// Full Date / Time - no strf eq : c, r; no date eq : %c, %D, %F, %x
+		'U' => '%s'
+	);
+	$strftime_format = strtr((string)$date_format, $chars);
 
 	$date_parsed = strptime($string_date, $strftime_format);
 	$int_date = mktime($date_parsed["tm_hour"],$date_parsed["tm_min"],$date_parsed["tm_sec"],$date_parsed["tm_mon"]+1,($date_parsed["tm_mday"]),(1900+$date_parsed["tm_year"]));
@@ -479,34 +451,35 @@ function DateTimeCreateFromFormat($date_format, $string_date) {
 //strptime function with solution for windows
 if( !function_exists("strptime")) {
 	function strptime($date, $format) {
-	    $masks = array(
-	      '%d' => '(?P<d>[0-9]{2})',
-	      '%m' => '(?P<m>[0-9]{2})',
-	      '%Y' => '(?P<Y>[0-9]{4})',
-	      '%H' => '(?P<H>[0-9]{2})',
-	      '%M' => '(?P<M>[0-9]{2})',
-	      '%S' => '(?P<S>[0-9]{2})',
-	    );
+		$masks = array(
+		  '%d' => '(?P<d>[0-9]{2})',
+		  '%m' => '(?P<m>[0-9]{2})',
+		  '%Y' => '(?P<Y>[0-9]{4})',
+		  '%H' => '(?P<H>[0-9]{2})',
+		  '%M' => '(?P<M>[0-9]{2})',
+		  '%S' => '(?P<S>[0-9]{2})',
+		);
 	
-	    $rexep = "#".strtr(preg_quote($format), $masks)."#";
-	    if(!preg_match($rexep, $date, $out))
-	      return false;
+		$regexp = "#".strtr(preg_quote($format), $masks)."#";
+		if(!preg_match($regexp, $date, $out)) {
+			return false;
+		}
 	
-	    $ret = array(
-	      "tm_sec"  => (int) $out['S'],
-	      "tm_min"  => (int) $out['M'],
-	      "tm_hour" => (int) $out['H'],
-	      "tm_mday" => (int) $out['d'],
-	      "tm_mon"  => $out['m']?$out['m']-1:0,
-	      "tm_year" => $out['Y'] > 1900 ? $out['Y'] - 1900 : 0,
-	    );
-	    return $ret;
+		$ret = array(
+		  "tm_sec"  => (int) $out['S'],
+		  "tm_min"  => (int) $out['M'],
+		  "tm_hour" => (int) $out['H'],
+		  "tm_mday" => (int) $out['d'],
+		  "tm_mon"  => $out['m']?$out['m']-1:0,
+		  "tm_year" => $out['Y'] > 1900 ? $out['Y'] - 1900 : 0,
+		);
+		return $ret;
 	}
 }
 
 /**
  * @param string $extension_txt_id
- * @return SimpleXMLElement | bool
+ * @return SimpleXMLElement | false
  */
 function getExtensionConfigXml($extension_txt_id) {
 	$registry = Registry::getInstance();
@@ -518,6 +491,9 @@ function getExtensionConfigXml($extension_txt_id) {
 
 	$extension_txt_id = str_replace('../', '', $extension_txt_id);
 	$filename = DIR_EXT . $extension_txt_id . '/config.xml';
+	/**
+	 * @var $ext_configs SimpleXMLElement|false
+	 */
 	$ext_configs = simplexml_load_file($filename);
 
 	if($ext_configs === false){
@@ -564,8 +540,8 @@ function getExtensionConfigXml($extension_txt_id) {
 										DIR_CORE.'extension/' . 'default/config_top.xml',
 										DIR_CORE.'extension/' . (string)$ext_configs->type . '/config_top.xml'),
 					   'bottom' => array(
-						   				DIR_CORE.'extension/' . 'default/config_bottom.xml',
-						   				DIR_CORE.'extension/' . (string)$ext_configs->type . '/config_bottom.xml'
+										DIR_CORE.'extension/' . 'default/config_bottom.xml',
+										DIR_CORE.'extension/' . (string)$ext_configs->type . '/config_bottom.xml'
 					   ));
 
 	// then loop for all additional xml-config-files
@@ -574,7 +550,7 @@ function getExtensionConfigXml($extension_txt_id) {
 			if ( file_exists($filename) ) {
 				$additional_config = simplexml_load_file($filename);
 				//if error - writes all
-				if($additional_config===false){
+				if($additional_config === false){
 					foreach(libxml_get_errors() as $error) {
 						$err = new AError($error->message);
 						$err->toLog()->toDebug()->toMessages();
@@ -589,7 +565,7 @@ function getExtensionConfigXml($extension_txt_id) {
 					$item_id = $extension_txt_id.'_'.$attr['id'];
 					$is_exists = $ext_configs->xpath('/extension/settings/item[@id=\''.$item_id.'\']');
 					if(!$is_exists){
-						// remove item that was appended on previous cicle from additional xml (override)
+						// remove item that was appended on previous cycle from additional xml (override)
 						$qry = "/extension/settings/item[@id='".$item_id."']";
 						$existed = $xpath->query($qry);
 						if(!is_null($existed)){
@@ -614,7 +590,6 @@ function getExtensionConfigXml($extension_txt_id) {
 		}
 	}
 
-
 	//remove all disabled items from list
 	$qry = '/extension/settings/item[disabled="true"]';
 	$existed = $xpath->query($qry);
@@ -624,7 +599,6 @@ function getExtensionConfigXml($extension_txt_id) {
 		}
 	}
 
-
 	$result = simplexml_import_dom($base_dom);
 	$registry->set($extension_txt_id.'_configXML',$result);
 	return $result;
@@ -633,22 +607,29 @@ function getExtensionConfigXml($extension_txt_id) {
 /**
  * Function for starting new storefront session for control panel user
  * NOTE: do not try to save into session any data after this function call!
+ * Also function returns false on POST-requests!
  *
  * @param $user_id int - control panel user_id
  * @param array $data data for writing into new session storage
  * @return bool
  */
 function startStorefrontSession($user_id, $data=array()){
-    $data = (array)$data;
-    $data['merchant'] = (int)$user_id;
-    if(!$data['merchant']){ return false;}
-    session_write_close();
-    $session = new ASession(defined('UNIQUE_ID') ? 'AC_SF_'.strtoupper(substr(UNIQUE_ID, 0, 10)) : 'AC_SF_PHPSESSID');
-    foreach($data as $k=>$v){
-        $session->data[$k] = $v;
-    }
-    session_write_close();
-    return true;
+	//NOTE: do not allow create sf-session via POST-request. Related to language-switcher and enabled maintenance mode(see usages)
+	if($_SERVER['REQUEST_METHOD'] != 'GET'){
+		return false;
+	}
+	$data = (array)$data;
+	$data['merchant'] = (int)$user_id;
+	if(!$data['merchant']){
+		return false;
+	}
+	session_write_close();
+	$session = new ASession(defined('UNIQUE_ID') ? 'AC_SF_'.strtoupper(substr(UNIQUE_ID, 0, 10)) : 'AC_SF_PHPSESSID');
+	foreach($data as $k=>$v){
+		$session->data[$k] = $v;
+	}
+	session_write_close();
+	return true;
 }
 
 
@@ -682,12 +663,12 @@ function build_sort_order($array, $min, $max, $sort_direction = 'asc'){
 	$prior_sort = -1;
 	if ( $sort_direction == 'asc') {
 		foreach( $array as $id ){
-		    if($prior_sort < 0) {
-		    	$return_arr[$id] = $min;
-		    } else {
-		    	$return_arr[$id] = round($prior_sort + $increment, 0);
-		    }
-		    $prior_sort = $return_arr[$id];
+			if($prior_sort < 0) {
+				$return_arr[$id] = $min;
+			} else {
+				$return_arr[$id] = round($prior_sort + $increment, 0);
+			}
+			$prior_sort = $return_arr[$id];
 		}
 	} else if ( $sort_direction == 'desc') {
 		$prior_sort = $max+$increment;
@@ -714,10 +695,9 @@ function is_assoc($test_array) {
  *
  * @return string
  */
-
 function project_base() {
-	$base = 'PGEgaHJlZj0iaHR0cDovL3d3dy5hYmFudGVjYXJ0LmNvbSIgb25jbGljaz0id2luZG93Lm9wZW4odGhpcy5ocmVm';
-	$base .= 'KTtyZXR1cm4gZmFsc2U7IiB0aXRsZT0iSWRlYWwgT3BlblNvdXJjZSBFLWNvbW1lcmNlIFNvbHV0aW9uIj5BYmFudGVDYXJ0PC9hPg==';
+	$base = 'PGEgaHJlZj0iaHR0cDovL3d3dy5hYmFudGVjYXJ0LmNvbSIgdGFyZ2V0PSJfYWJhbnRlY2FydCI';
+	$base .= 'gdGl0bGU9IklkZWFsIE9wZW5Tb3VyY2UgRS1jb21tZXJjZSBTb2x1dGlvbiI+QWJhbnRlQ2FydDwvYT4=';
 	return base64_decode($base);
 }
 
@@ -727,7 +707,6 @@ function project_base() {
  * @param string $test_string
  * @return bool
  */
-
 function is_html($test_string) {
 	if($test_string != strip_tags($test_string)) {
 		return true;
@@ -740,24 +719,25 @@ function is_html($test_string) {
  *
  * @param string $email The email address
  * @param int|string $s Size in pixels, defaults to 80px [ 1 - 2048 ]
- * @param string $d Default imageset to use [ 404 | mm | identicon | monsterid | wavatar ]
+ * @param string $d Default image set to use [ 404 | mm | identicon | monsterid | wavatar ]
  * @param string $r Maximum rating (inclusive) [ g | pg | r | x ]
  * @return String containing either just a URL or a complete image tag
  */
 function getGravatar( $email = '', $s = 80, $d = 'mm', $r = 'g') {
-    if ( empty($email) ) {
-    	return null;
-    }
-    $url = 'https://www.gravatar.com/avatar/';
-    $url .= md5( strtolower( trim( $email ) ) );
-    $url .= "?s=".$s."&d=".$d."&r=".$r;
-    return $url;
+	if ( empty($email) ) {
+		return null;
+	}
+	$url = 'https://www.gravatar.com/avatar/';
+	$url .= md5( strtolower( trim( $email ) ) );
+	$url .= "?s=".$s."&d=".$d."&r=".$r;
+	return $url;
 }
 
 function compressTarGZ($tar_filename, $tar_dir, $compress_level = 5){
-
+	if(!$tar_filename || !$tar_dir){
+		return false;
+	}
 	$compress_level = ($compress_level<1 || $compress_level>9) ? 5 : $compress_level;
-
 	$exit_code = 0;
 	if(pathinfo($tar_filename,PATHINFO_EXTENSION)=='gz'){
 		$filename = rtrim($tar_filename,'.gz');
@@ -779,17 +759,21 @@ function compressTarGZ($tar_filename, $tar_dir, $compress_level = 5){
 	if(class_exists('PharData') ){
 		try{
 			$a = new PharData($tar );
-			$a->buildFromDirectory($tar_dir); // this code creates tar-file
-			if(file_exists($tar)){ // remove tar-file after zipping
+			//creates tar-file
+			$a->buildFromDirectory($tar_dir);
+			// remove tar-file after zipping
+			if(file_exists($tar)){
 				gzip($tar, $compress_level);
 				unlink($tar);
 			}
 		}catch (Exception $e){
-			$error = new AError( $e->getMessage() );
+			$error = new AError( 'Tar GZ compressing error: '. $e->getMessage() );
 			$error->toLog()->toDebug();
 			$exit_code =1;
 		}
 	}else{
+		//class pharData does not exists.
+		//set mark to use targz-lib
 		$exit_code =1;
 	}
 
@@ -810,28 +794,32 @@ function compressTarGZ($tar_filename, $tar_dir, $compress_level = 5){
  * @return bool
  */
 function gzip($src, $level = 5, $dst = false){
-    if($dst == false){
-        $dst = $src.".gz";
-    }
-    if(file_exists($src)){
-        $filesize = filesize($src);
-        $src_handle = fopen($src, "r");
-        if(!file_exists($dst)){
-            $dst_handle = gzopen($dst, "w$level");
-            while(!feof($src_handle)){
-                $chunk = fread($src_handle, 2048);
-                gzwrite($dst_handle, $chunk);
-            }
-            fclose($src_handle);
-            gzclose($dst_handle);
-            return true;
-        } else {
-            error_log($dst." already exists");
-        }
-    } else {
-        error_log($src." doesn't exist");
-    }
-    return false;
+	if(!$src){
+		return false;
+	}
+
+	if($dst == false){
+		$dst = $src.".gz";
+	}
+	if(file_exists($src)){
+		$filesize = filesize($src);
+		$src_handle = fopen($src, "r");
+		if(!file_exists($dst)){
+			$dst_handle = gzopen($dst, "w$level");
+			while(!feof($src_handle)){
+				$chunk = fread($src_handle, 2048);
+				gzwrite($dst_handle, $chunk);
+			}
+			fclose($src_handle);
+			gzclose($dst_handle);
+			return true;
+		} else {
+			error_log($dst." already exists");
+		}
+	} else {
+		error_log($src." doesn't exist");
+	}
+	return false;
 }
 
 
@@ -842,29 +830,29 @@ function gzip($src, $level = 5, $dst = false){
  * @return string
  */
 function randomWord($length = 4){
-    $newcode_length=0;
-    $newcode='';
-    while($newcode_length < $length) {
-        $x=1;
-        $y=3;
-        $part = rand($x,$y);
-        if($part==1){// Numbers
-        	$a=48;
-        	$b=57;
-        }  
-        if($part==2){// UpperCase
-        	$a=65;
-        	$b=90;
-        }  
-        if($part==3){// LowerCase
-        	$a=97;
-        	$b=122;
-        } 
-        $code_part=chr(rand($a,$b));
-        $newcode_length = $newcode_length + 1;
-        $newcode = $newcode.$code_part;
-    }
-    return $newcode;
+	$new_code_length=0;
+	$new_code='';
+	while($new_code_length < $length) {
+		$x=1;
+		$y=3;
+		$part = rand($x,$y);
+		if($part==1){// Numbers
+			$a=48;
+			$b=57;
+		}
+		if($part==2){// UpperCase
+			$a=65;
+			$b=90;
+		}
+		if($part==3){// LowerCase
+			$a=97;
+			$b=122;
+		}
+		$code_part=chr(rand($a,$b));
+		$new_code_length = $new_code_length + 1;
+		$new_code = $new_code.$code_part;
+	}
+	return $new_code;
 }
 
 
@@ -875,16 +863,16 @@ function randomWord($length = 4){
  * @param $chars int  - {token length}
  * @return string
  */
-function genToken($chars = 32){	
-    $token = '';
-    $codeAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    $codeAlphabet.= "abcdefghijklmnopqrstuvwxyz";
-    $codeAlphabet.= "0123456789";
-    $max = strlen($codeAlphabet) - 1;
-    for ($i = 0; $i < $chars; $i++) {
-        $token .= $codeAlphabet[mt_rand(0, $max)];
-    }
-    return $token;
+function genToken($chars = 32){
+	$token = '';
+	$codeAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	$codeAlphabet.= "abcdefghijklmnopqrstuvwxyz";
+	$codeAlphabet.= "0123456789";
+	$max = strlen($codeAlphabet) - 1;
+	for ($i = 0; $i < $chars; $i++) {
+		$token .= $codeAlphabet[mt_rand(0, $max)];
+	}
+	return $token;
 }
 
 /**
@@ -892,83 +880,81 @@ function genToken($chars = 32){
  * @param $zip_filename
  * @param $zip_dir
  */
-function compressZIP($zip_filename, $zip_dir){
-
-}
+function compressZIP($zip_filename, $zip_dir){}
 
 function getMimeType($filename) {
 	$filename = (string)$filename;
-    $mime_types = array(
-        'txt' => 'text/plain',
-        'htm' => 'text/html',
-        'html' => 'text/html',
-        'php' => 'text/html',
-        'css' => 'text/css',
-        'js' => 'application/javascript',
-        'json' => 'application/json',
-        'xml' => 'application/xml',
-        'swf' => 'application/x-shockwave-flash',
-        'flv' => 'video/x-flv',
+	$mime_types = array(
+		'txt' => 'text/plain',
+		'htm' => 'text/html',
+		'html' => 'text/html',
+		'php' => 'text/html',
+		'css' => 'text/css',
+		'js' => 'application/javascript',
+		'json' => 'application/json',
+		'xml' => 'application/xml',
+		'swf' => 'application/x-shockwave-flash',
+		'flv' => 'video/x-flv',
 
-        // images
-        'png' => 'image/png',
-        'jpe' => 'image/jpeg',
-        'jpeg' => 'image/jpeg',
-        'jpg' => 'image/jpeg',
-        'gif' => 'image/gif',
-        'bmp' => 'image/bmp',
-        'ico' => 'image/vnd.microsoft.icon',
-        'tiff' => 'image/tiff',
-        'tif' => 'image/tiff',
-        'svg' => 'image/svg+xml',
-        'svgz' => 'image/svg+xml',
+		// images
+		'png' => 'image/png',
+		'jpe' => 'image/jpeg',
+		'jpeg' => 'image/jpeg',
+		'jpg' => 'image/jpeg',
+		'gif' => 'image/gif',
+		'bmp' => 'image/bmp',
+		'ico' => 'image/vnd.microsoft.icon',
+		'tiff' => 'image/tiff',
+		'tif' => 'image/tiff',
+		'svg' => 'image/svg+xml',
+		'svgz' => 'image/svg+xml',
 
-        // archives
-        'zip' => 'application/zip',
-        'gz' => 'application/gzip',
-        'rar' => 'application/x-rar-compressed',
-        'exe' => 'application/x-msdownload',
-        'msi' => 'application/x-msdownload',
-        'cab' => 'application/vnd.ms-cab-compressed',
+		// archives
+		'zip' => 'application/zip',
+		'gz' => 'application/gzip',
+		'rar' => 'application/x-rar-compressed',
+		'exe' => 'application/x-msdownload',
+		'msi' => 'application/x-msdownload',
+		'cab' => 'application/vnd.ms-cab-compressed',
 
-        // audio/video
-        'mp3' => 'audio/mpeg',
-        'qt' => 'video/quicktime',
-        'mov' => 'video/quicktime',
+		// audio/video
+		'mp3' => 'audio/mpeg',
+		'qt' => 'video/quicktime',
+		'mov' => 'video/quicktime',
 
-        // adobe
-        'pdf' => 'application/pdf',
-        'psd' => 'image/vnd.adobe.photoshop',
-        'ai' => 'application/postscript',
-        'eps' => 'application/postscript',
-        'ps' => 'application/postscript',
+		// adobe
+		'pdf' => 'application/pdf',
+		'psd' => 'image/vnd.adobe.photoshop',
+		'ai' => 'application/postscript',
+		'eps' => 'application/postscript',
+		'ps' => 'application/postscript',
 
-        // ms office
-        'doc' => 'application/msword',
-        'rtf' => 'application/rtf',
-        'xls' => 'application/vnd.ms-excel',
-        'ppt' => 'application/vnd.ms-powerpoint',
+		// ms office
+		'doc' => 'application/msword',
+		'rtf' => 'application/rtf',
+		'xls' => 'application/vnd.ms-excel',
+		'ppt' => 'application/vnd.ms-powerpoint',
 
-        // open office
-        'odt' => 'application/vnd.oasis.opendocument.text',
-        'ods' => 'application/vnd.oasis.opendocument.spreadsheet',
-    );
+		// open office
+		'odt' => 'application/vnd.oasis.opendocument.text',
+		'ods' => 'application/vnd.oasis.opendocument.spreadsheet',
+	);
 
 	$pieces = explode('.',$filename);
 	$ext = strtolower(array_pop($pieces));
 
-    if (has_value($mime_types[$ext])) {
-        return $mime_types[$ext];
-    }elseif (function_exists('finfo_open')) {
-        $finfo = finfo_open(FILEINFO_MIME);
-        $mimetype = finfo_file($finfo, $filename);
-        finfo_close($finfo);
-	    $mimetype = !$mimetype ? 'application/octet-stream' : $mimetype;
-        return $mimetype;
-    }
-    else {
-        return 'application/octet-stream';
-    }
+	if (has_value($mime_types[$ext])) {
+		return $mime_types[$ext];
+	}elseif (function_exists('finfo_open')) {
+		$finfo = finfo_open(FILEINFO_MIME);
+		$mimetype = finfo_file($finfo, $filename);
+		finfo_close($finfo);
+		$mimetype = !$mimetype ? 'application/octet-stream' : $mimetype;
+		return $mimetype;
+	}
+	else {
+		return 'application/octet-stream';
+	}
 }
 
 // function detect is maximum execution time can be changed
@@ -985,27 +971,36 @@ function canChangeExecTime(){
 
 function getMemoryLimitInBytes(){
 	$size_str = ini_get('memory_limit');
-    switch (substr ($size_str, -1)){
-        case 'M': case 'm': return (int)$size_str * 1048576;
-        case 'K': case 'k': return (int)$size_str * 1024;
-        case 'G': case 'g': return (int)$size_str * 1073741824;
-        default: return $size_str;
-    }
+	switch (substr($size_str, -1)) {
+		case 'M':
+		case 'm':
+			return (int)$size_str * 1048576;
+		case 'K':
+		case 'k':
+			return (int)$size_str * 1024;
+		case 'G':
+		case 'g':
+			return (int)$size_str * 1073741824;
+		default:
+			return $size_str;
+	}
 }
 
 function is_valid_url( $validate_url ) {
 	if (filter_var($validate_url, FILTER_VALIDATE_URL) === FALSE) {
-	    return false;	
+		return false;
 	} else {
-	    return true;		
+		return true;
 	}
 }
 
-/*
-	Get valid URL path considering *.php
-*/
+/**
+ * Get valid URL path considering *.php
+ * @param string $url
+ * @return string
+ */
 function get_url_path( $url ) {
-	$url_path1 = parse_url($url,PHP_URL_PATH);	
+	$url_path1 = parse_url($url,PHP_URL_PATH);
 	//do we have path with php in the string? Treat case: /abantecart120/index.php/storefront/view/resources/image/18/6c/index.php
 	$pos = stripos($url_path1, '.php');
 	if ($pos) {
@@ -1013,29 +1008,28 @@ function get_url_path( $url ) {
 		$filtered_url = substr($url_path1, 0, $pos+4);
 		return rtrim(dirname($filtered_url), '/.\\').'/';
 	} else {
-		return rtrim($url_path1, '/.\\').'/';	
+		return rtrim($url_path1, '/.\\').'/';
 	}
 }
 
 /*
-	Return formatted execution back stack
+ * Return formatted execution back stack
  *
  * @param $depth int/string  - depth of the trace back ('full' to get complete stack)
  * @return string
-	
 */
 function genExecTrace($depth = 5){
 	$e = new Exception();
 	$trace = explode("\n", $e->getTraceAsString());
 	array_pop($trace); // remove call to this method
 	if($depth == 'full') {
-		$length = count($trace);		
+		$length = count($trace);
 	} else {
 		$length = $depth;
 	}
 	$result = array();
 	for ($i = 0; $i < $length; $i++) {
-	    $result[] = ' - ' . substr($trace[$i], strpos($trace[$i], ' '));
+		$result[] = ' - ' . substr($trace[$i], strpos($trace[$i], ' '));
 	}
 	
 	return "Execution stack: \t" . implode("\n\t", $result);
@@ -1051,9 +1045,9 @@ function is_writable_dir($dir) {
 	if (empty($dir)){
 		return false;
 	} else if(is_dir($dir) && is_writable($dir)) {
-		return true;	
+		return true;
 	} else {
-		return false;	
+		return false;
 	}
 }
 
@@ -1067,7 +1061,7 @@ function make_writable_dir($dir) {
 	if (empty($dir)){
 		return false;
 	} else if(is_writable_dir($dir)) {
-		return true;	
+		return true;
 	} else if(is_dir($dir) ) {
 		//Try to make directory writable 
 		chmod($dir,0777);
@@ -1076,7 +1070,7 @@ function make_writable_dir($dir) {
 		//Try to create directory
 		mkdir($dir,0777);
 		chmod($dir,0777);
-		return is_writable_dir($dir);	
+		return is_writable_dir($dir);
 	}
 }
 
@@ -1088,9 +1082,9 @@ function make_writable_dir($dir) {
 */
 function make_writable_path($path) {
 	if (empty($path)){
-	    return false;
+		return false;
 	} else if(is_writable_dir($path)) {
-	    return true;
+		return true;
 	} else {
 		//recurse if parent directory does not exists
 		$parent = dirname($path);
@@ -1099,7 +1093,7 @@ function make_writable_path($path) {
 		}
 		mkdir($path,0777,true);
 		chmod($path,0777);
-	    return true;
+		return true;
 	}
 }
 
@@ -1126,7 +1120,6 @@ function js_echo($text) {
  * Function output string with html-entities
  *
  * @param string $html
- * @return string
 */
 function echo_html2view($html){
 	echo htmlspecialchars($html,ENT_QUOTES,'UTF-8');
@@ -1174,36 +1167,50 @@ function get_image_size($filename){
  * @param int $quality
  * @return string / path to new image
  */
-function check_resize_image($orig_image, $new_image, $width, $height, $quality) {
-    if (!is_file($orig_image) || empty($new_image)) {
-    	return null;
-    }
+function check_resize_image($orig_image, $new_image, $width, $height, $quality){
+	if (!is_file($orig_image) || empty($new_image)) {
+		return null;
+	}
 
-    //if new file not yet present, check directory
-	if (!file_exists(DIR_IMAGE . $new_image)){
-	    $path = '';
-	    $directories = explode('/', dirname(str_replace('../', '', $new_image)));
-	    foreach ($directories as $directory){
-	    	$path = $path . '/' . $directory;
-	    	//do we have directory?
-	    	if (!file_exists(DIR_IMAGE . $path)){
-	    		// Make sure the index file is there
-	    		$indexFile = DIR_IMAGE . $path . '/index.php';
-	    		@mkdir(DIR_IMAGE . $path, 0775) && file_put_contents($indexFile, "<?php die('Restricted Access!'); ?>");
-	    	}
-	    }
+	//if new file not yet present, check directory
+	if (!file_exists(DIR_IMAGE . $new_image)) {
+		$path = '';
+		$directories = explode('/', dirname(str_replace('../', '', $new_image)));
+		foreach ($directories as $directory) {
+			$path = $path . '/' . $directory;
+			//do we have directory?
+			if (!file_exists(DIR_IMAGE . $path)) {
+				// Make sure the index file is there
+				$indexFile = DIR_IMAGE . $path . '/index.php';
+				$result = mkdir(DIR_IMAGE . $path, 0775) && file_put_contents($indexFile, "<?php die('Restricted Access!'); ?>");
+				if (!$result) {
+					$error = new AWarning('Cannot to create directory ' . DIR_IMAGE . $path . '. Please check permissions for ' . DIR_IMAGE);
+					$error->toLog();
+				}
+			}
+		}
 	}
 
 	if (!file_exists(DIR_IMAGE . $new_image) || (filemtime($orig_image) > filemtime(DIR_IMAGE . $new_image))){
-	    $image = new AImage($orig_image);
-	    $image->resizeAndSave(DIR_IMAGE . $new_image,
-	    		$width,
-	    		$height,
-	    		array (
-	    				'quality' => $quality
-	    		));
-	    unset($image);
+		$image = new AImage($orig_image);
+		$result = $image->resizeAndSave(DIR_IMAGE . $new_image,
+										$width,
+										$height,
+										array (
+												'quality' => $quality
+										));
+		unset($image);
+		if(!$result){
+			return null;
+		}
 	}
 
 	return $new_image;
+}
+
+
+function redirect($url){
+	if(!$url){ return false; }
+	header('Location: ' . str_replace('&amp;', '&', $url));
+	exit;
 }

@@ -48,7 +48,7 @@ echo $tabs;
 		
 	<div class="panel-body panel-body-nopadding">
 		<div class="row">
-			<div class="col-sm-3 mt10"><img src="<?php echo HTTP_EXT . 'default_pp_pro/image/all_in_one_solution_logo_u2645_normal.gif'; ?>"/></div>
+			<div class="col-sm-3 mt10"><img src="<?php echo HTTPS_EXT . 'default_pp_pro/image/all_in_one_solution_logo_u2645_normal.gif'; ?>"/></div>
 			<div class="col-sm-6"><?php echo $text_signup_account_note; ?></div>
 			<div class="col-sm-3 mt10"><a class="btn btn-primary"
 			                         target="_blank"
@@ -222,7 +222,12 @@ echo $this->html->buildElement(
 					error_alert( <?php js_echo($error_turn_extension_on); ?> );
 					return false;
 				}
-				info_alert( response['message'] );
+				if(response['error'] == true){
+					error_alert( response['message'] );
+				}else{
+					info_alert( response['message'] );
+				}
+
 				$('#test_connection').button('reset');
 			}
 		});

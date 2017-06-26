@@ -5,7 +5,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright © 2011-2016 Belavier Commerce LLC
+  Copyright © 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   License details is bundled with this package in the file LICENSE.txt.
@@ -29,13 +29,17 @@ final class AUser{
 	 * @var int
 	 */
 	private $user_id;
+	private $user_group_id;
+
 	/**
 	 * @var string
 	 */
 	private $email;
 	private $username;
+	private $firstname;
+	private $lastname;
 	private $last_login;
-	private $user_group_id;
+
 	/**
 	 * @var array
 	 */
@@ -50,27 +54,18 @@ final class AUser{
 		$this->session = $registry->get('session');
 
 		if (isset($this->session->data['user_id'])){
-			$user_query = $this->db->query("SELECT * FROM " . $this->db->table("users") . " WHERE user_id = '" . (int)$this->session->data['user_id'] . "'");
-
+			$user_query = $this->db->query("SELECT * 
+											FROM " . $this->db->table("users") . " 
+											WHERE user_id = '" . (int)$this->session->data['user_id'] . "'");
 			if ($user_query->num_rows){
-				$this->user_id = $user_query->row['user_id'];
+				$this->user_id = (int)$user_query->row['user_id'];
+				$this->user_group_id = (int)$user_query->row['user_group_id'];
 				$this->email = $user_query->row['email'];
 				$this->username = $user_query->row['username'];
+				$this->firstname = $user_query->row['firstname'];
+				$this->lastname = $user_query->row['lastname'];
 				$this->last_login = $this->session->data['user_last_login'];
-				$this->user_group_id = (int)$user_query->row['user_group_id'];
-
-				$this->db->query("UPDATE " . $this->db->table("users") . " 
-								  SET ip = '" . $this->db->escape($this->request->server['REMOTE_ADDR']) . "'
-								  WHERE user_id = '" . (int)$this->session->data['user_id'] . "'");
-
-				$user_group_query = $this->db->query("SELECT permission
-													  FROM " . $this->db->table("user_groups") . "
-													  WHERE user_group_id = '" . (int)$user_query->row['user_group_id'] . "'");
-				if (unserialize($user_group_query->row['permission'])){
-					foreach (unserialize($user_group_query->row['permission']) as $key => $value){
-						$this->permission[$key] = $value;
-					}
-				}
+				$this->_user_init();
 			} else{
 				$this->logout();
 			}
@@ -85,7 +80,7 @@ final class AUser{
 	 * @return bool
 	 */
 	public function login($username, $password){
-		//Supports older passords for upgraded/migrated stores prior to 1.2.8
+		//Supports older passwords for upgraded/migrated stores prior to 1.2.8
 		$add_pass_sql = '';
 		if (defined('SALT')){
 			$add_pass_sql = "OR password = '" . $this->db->escape(md5($password . SALT)) . "'";
@@ -96,7 +91,7 @@ final class AUser{
 			WHERE username = '" . $this->db->escape($username) . "'
 			AND (
 				password = 	SHA1(CONCAT(salt,
-							SHA1(CONCAT(salt, SHA1('" . $this->db->escape(htmlspecialchars($password, ENT_QUOTES)) . "')))
+							SHA1(CONCAT(salt, SHA1('" . $this->db->escape($password) . "')))
 						))
 				" . $add_pass_sql . "
 			)
@@ -104,38 +99,54 @@ final class AUser{
 		");
 
 		if ($user_query->num_rows){
-			$this->session->data['user_id'] = $user_query->row['user_id'];
-			$this->session->data['user_last_login'] = $user_query->row['last_login'];
-
-			$this->user_id = $user_query->row['user_id'];
+			$this->user_id = $this->session->data['user_id'] = (int)$user_query->row['user_id'];
+			$this->user_group_id = (int)$user_query->row['user_group_id'];
 			$this->username = $user_query->row['username'];
-			$this->last_login = $user_query->row['last_login'];
+
+			$this->last_login = $this->session->data['user_last_login'] = $user_query->row['last_login'];
 			if (!$this->last_login || $this->last_login == 'null' || $this->last_login == '0000-00-00 00:00:00'){
 				$this->session->data['user_last_login'] = $this->last_login = '';
 			}
 
-			$this->db->query("UPDATE " . $this->db->table("users") . " 
-							  SET last_login = NOW()
-							  WHERE user_id = '" . (int)$this->session->data['user_id'] . "'");
-
-			$user_group_query = $this->db->query("SELECT permission
-												  FROM " . $this->db->table("user_groups") . "
-												  WHERE user_group_id = '" . (int)$user_query->row['user_group_id'] . "'");
-
-			if ($user_group_query->row['permission']){
-				foreach (unserialize($user_group_query->row['permission']) as $key => $value){
-					$this->permission[$key] = $value;
-				}
-			}
+			$this->_user_init();
+			$this->_update_last_login();
 			return true;
 		} else{
 			return false;
 		}
 	}
 
+	/**
+	 * Init user
+	 *
+	 * @param void
+	 * @return void
+	 */
+	private function _user_init(){
+
+		$this->db->query("SET @USER_ID = '" . $this->user_id . "';");
+		$this->db->query("UPDATE " . $this->db->table("users") . " 
+							SET ip = '" . $this->db->escape($this->request->getRemoteIP()) . "'
+							WHERE user_id = '" . $this->user_id . "';");
+
+		$user_group_query = $this->db->query("SELECT permission
+											  FROM " . $this->db->table("user_groups") . "
+											  WHERE user_group_id = '" . $this->user_group_id . "'");
+		if (unserialize($user_group_query->row['permission'])){
+			foreach (unserialize($user_group_query->row['permission']) as $key => $value){
+				$this->permission[$key] = $value;
+			}
+		}
+	}
+
+	private function _update_last_login(){
+		$this->db->query("UPDATE " . $this->db->table("users") . " 
+						SET last_login = NOW()
+						WHERE user_id = '" . $this->user_id . "';");
+	}
+
 	public function logout(){
 		unset($this->session->data['user_id']);
-
 		$this->user_id = '';
 		$this->username = '';
 	}
@@ -146,7 +157,7 @@ final class AUser{
 	 * @return bool
 	 */
 	public function hasPermission($key, $value){
-		//If top_admin allow all permisson. Make sure Top Admin Group is set to ID 1
+		//If top_admin allow all permission. Make sure Top Admin Group is set to ID 1
 		if ($this->user_group_id == 1){
 			return true;
 		} else if (isset($this->permission[$key])){
@@ -232,13 +243,13 @@ final class AUser{
 	public function validate($username, $email){
 		$user_query = $this->db->query(
 				"SELECT * FROM " . $this->db->table("users") . "
-			WHERE username = '" . $this->db->escape($username) . "'
-				AND email = '" . $this->db->escape($email) . "'");
-
-		if ($user_query->num_rows)
+				WHERE username = '" . $this->db->escape($username) . "'
+						AND email = '" . $this->db->escape($email) . "'");
+		if ($user_query->num_rows) {
 			return true;
-		else
+		}else {
 			return false;
+		}
 	}
 
 	/**
@@ -263,4 +274,17 @@ final class AUser{
 		return getGravatar($this->email);
 	}
 
+	/**
+	  * @return string
+	  */
+	public function getUserFirstName() {
+		return $this->firstname;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getUserLastName() {
+		return $this->lastname;
+	}
 }

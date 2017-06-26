@@ -5,7 +5,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright © 2011-2016 Belavier Commerce LLC
+  Copyright © 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   License details is bundled with this package in the file LICENSE.txt.
@@ -29,6 +29,7 @@ if (!defined('DIR_CORE')){
  * @property ACustomer $customer
  * @property AConfig $config
  * @property ALog $log
+ * @property ALoader $load
  * @property ExtensionsAPI $extensions
  * @property ARequest $request
  */
@@ -77,8 +78,10 @@ final class ADownload{
 
 		$result = $this->db->query("SELECT d.*, dd.*, ptd.*
 									FROM " . $this->db->table('downloads') . " d
-									RIGHT JOIN " . $this->db->table('products_to_downloads') . " ptd ON ptd.download_id = d.download_id
-									LEFT JOIN " . $this->db->table('download_descriptions') . " dd ON d.download_id = dd.download_id AND dd.language_id = '" . $language_id . "'
+									RIGHT JOIN " . $this->db->table('products_to_downloads') . " ptd 
+										ON ptd.download_id = d.download_id
+									LEFT JOIN " . $this->db->table('download_descriptions') . " dd 
+										ON d.download_id = dd.download_id AND dd.language_id = '" . $language_id . "'
 									WHERE ptd.product_id='" . (int)$product_id . "'
 										AND d.activate='before_order'
 										AND d.status>0");
@@ -123,8 +126,10 @@ final class ADownload{
 
 		$result = $this->db->query("SELECT dd.*, d.*, od.*
 									FROM " . $this->db->table('order_downloads') . " od
-									LEFT JOIN " . $this->db->table('downloads') . " d ON od.download_id = d.download_id
-									LEFT JOIN " . $this->db->table('download_descriptions') . " dd ON d.download_id = dd.download_id AND dd.language_id = '" . $language_id . "'
+									LEFT JOIN " . $this->db->table('downloads') . " d 
+										ON od.download_id = d.download_id
+									LEFT JOIN " . $this->db->table('download_descriptions') . " dd 
+										ON d.download_id = dd.download_id AND dd.language_id = '" . $language_id . "'
 									WHERE od.order_download_id='" . (int)$order_download_id . "'");
 		return $result->row;
 	}
@@ -140,13 +145,14 @@ final class ADownload{
 		}
 		$query = $this->db->query(
 				"SELECT dd.*, d.*, p2d.*
-					 FROM " . $this->db->table("products_to_downloads") . " p2d
-					 INNER JOIN " . $this->db->table("downloads") . " d ON (p2d.download_id = d.download_id)
-					 LEFT JOIN " . $this->db->table("download_descriptions") . " dd
-						ON (d.download_id = dd.download_id
-								AND dd.language_id = '" . (int)$this->config->get('storefront_language_id') . "')
-					 WHERE p2d.product_id = '" . (int)$product_id . "'
-					 		AND d.status=1 AND d.activate<>'before_order' ");
+				FROM " . $this->db->table("products_to_downloads") . " p2d
+				INNER JOIN " . $this->db->table("downloads") . " d 
+					ON (p2d.download_id = d.download_id)
+				LEFT JOIN " . $this->db->table("download_descriptions") . " dd
+					ON (d.download_id = dd.download_id
+						AND dd.language_id = '" . (int)$this->config->get('storefront_language_id') . "')
+				WHERE p2d.product_id = '" . (int)$product_id . "'
+					AND d.status=1 AND d.activate<>'before_order' ");
 		return $query->rows;
 	}
 
@@ -160,7 +166,7 @@ final class ADownload{
 	 */
 	public function addUpdateOrderDownload($order_product_id, $order_id, $download = array ()){
 		if (!(int)$order_product_id || !(int)$order_id || !(int)$download['download_id']){
-			return false;
+			return array();
 		}
 
 		if ($download['activate'] != 'order_status'){
@@ -174,7 +180,7 @@ final class ADownload{
 		//check if we have download yet
 		$check = $this->db->query("SELECT od.order_download_id
 									FROM " . $this->db->table('order_downloads') . " od
-									WHERE 	od.order_id='" . (int)$order_id . "'
+									WHERE od.order_id='" . (int)$order_id . "'
 											AND od.order_product_id='" . (int)$order_product_id . "' 
 											AND od.download_id='" . (int)$download['download_id'] . "'");
 		if ($check->num_rows){
@@ -288,7 +294,7 @@ final class ADownload{
 			$result = $this->db->query("SELECT dav.attribute_id, dav.attribute_value_ids as value
 										  FROM " . $this->db->table('download_attribute_values') . " dav
 										  LEFT JOIN " . $this->db->table('global_attributes') . " ga
-										        ON ga.attribute_id = dav.attribute_id
+												ON ga.attribute_id = dav.attribute_id
 										  WHERE dav.attribute_id IN (" . implode(',', $ids) . ") AND dav.download_id = '" . $download_id . "'
 										  ORDER BY ga.sort_order ASC");
 
@@ -395,11 +401,11 @@ final class ADownload{
 														 download_percent,
 														 `time`)
 						VALUES (" . $order_download_history_id . ",
-								'" . $download_info['order_download_id'] . "',
-								'" . $download_info['order_id'] . "',
-								'" . $download_info['order_product_id'] . "',
-								'" . $download_info['filename'] . "',
-								'" . $download_info['mask'] . "',
+								'" . (int)$download_info['order_download_id'] . "',
+								'" . (int)$download_info['order_id'] . "',
+								'" . (int)$download_info['order_product_id'] . "',
+								'" . $this->db->escape($download_info['filename']) . "',
+								'" . $this->db->escape($download_info['mask']) . "',
 								'" . $download_info['download_id'] . "',
 								'" . $prc . "',
 								NOW())
@@ -479,9 +485,48 @@ final class ADownload{
 		foreach ($query->rows as $download_info){
 			$downloads[$download_info['order_download_id']] = $download_info;
 		}
-
 		return $downloads;
+	}
 
+	/**
+	 * @param int $order_id
+	 * @param int $customer_id
+	 * @return array
+	 */
+	public function getCustomerOrderDownloads($order_id, $customer_id){
+		$customer_id = (int)$customer_id;
+		$order_id = (int)$order_id;
+		if (!$order_id){
+			return array ();
+		}
+		$sql = "SELECT o.order_id,
+					  o.order_status_id,
+					  od.download_id,
+					  od.status,
+					  od.date_added,
+					  od.order_download_id,
+					  d.activate,
+					  od.activate_order_status_id,
+					  od.name,
+					  od.filename,
+					  od.mask,
+					  od.remaining_count,
+					  od.expire_date,
+					  op.product_id
+			   FROM " . $this->db->table("order_downloads") . " od
+			   INNER JOIN " . $this->db->table("orders") . " o ON (od.order_id = o.order_id)
+			   LEFT JOIN " . $this->db->table("downloads") . " d ON (d.download_id = od.download_id)
+			   LEFT JOIN " . $this->db->table("order_products") . " op ON (op.order_product_id = od.order_product_id)
+			   WHERE o.order_id = '" . $order_id . "'
+			   " . ($customer_id ? " AND o.customer_id = '" . $customer_id . "'" : "") . "
+			   ORDER BY  o.date_added DESC, od.sort_order ASC ";
+
+		$query = $this->db->query($sql);
+		$downloads = array ();
+		foreach ($query->rows as $download_info){
+			$downloads[$download_info['order_download_id']] = $download_info;
+		}
+		return $downloads;
 	}
 
 	/**
@@ -489,6 +534,24 @@ final class ADownload{
 	 */
 	public function getTotalDownloads(){
 		return sizeof($this->getCustomerDownloads());
+	}
+
+	/**
+	 * @param int $order_id
+	 * @param int $customer_id
+	 * @return mixed
+	 */
+	public function getTotalOrderDownloads($order_id, $customer_id){
+		return sizeof($this->getCustomerOrderDownloads($order_id, $customer_id));
+	}
+
+	/**
+	 * @param int $order_id
+	 * @return int
+	 */
+	public function OrderHasDownloads($order_id){
+		$customer = (int)$this->customer->getId();
+		return $this->getTotalOrderDownloads($order_id, $customer);
 	}
 
 	/**

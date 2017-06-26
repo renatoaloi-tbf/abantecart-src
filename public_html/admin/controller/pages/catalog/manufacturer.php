@@ -5,7 +5,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright © 2011-2016 Belavier Commerce LLC
+  Copyright © 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   License details is bundled with this package in the file LICENSE.txt.
@@ -331,6 +331,11 @@ class ControllerPagesCatalogManufacturer extends AController {
 		));
 
 		$this->view->assign('help_url', $this->gen_help_url('manufacturer_edit') );
+
+        $saved_list_data = json_decode(html_entity_decode($this->request->cookie['grid_params']));
+        if($saved_list_data->table_id == 'manufacturer_grid') {
+            $this->data['list_url'] = $this->html->getSecureURL('catalog/manufacturer', '&saved_list=manufacturer_grid');
+        }
 
 		if( $viewport_mode != 'modal' ){
 			$this->addChild('responses/common/resource_library/get_resources_html', 'resources_html', 'responses/common/resource_library_scripts.tpl');

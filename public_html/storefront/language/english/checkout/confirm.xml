@@ -15,7 +15,7 @@
 	<definition>
 		<key>text_accept_agree</key>
 		<value>
-			<![CDATA[By clicking Confirm Order, you accept and agree to all terms of ]]></value>
+			<![CDATA[By clicking Confirm Order, you accept and agree to all terms of]]></value>
 	</definition>
 	<definition>
 		<key>text_cart_items</key>
@@ -99,6 +99,6 @@
 	</definition>
 	<definition>
 		<key>text_add_coupon</key>
-		<value><![CDATA[Add Coupon]]></value>
+		<value><![CDATA[Edit Coupon]]></value>
 	</definition>
 </definitions>

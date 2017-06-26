@@ -5,7 +5,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright © 2011-2016 Belavier Commerce LLC
+  Copyright © 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   License details is bundled with this package in the file LICENSE.txt.
@@ -45,8 +45,6 @@ class ControllerResponsesListingGridFileUploads extends AController {
 		$sord = $this->request->post ['sord']; // get the direction
 
 		$filter = array();
-		//process custom search form
-		$allowedSearchFilter = array ('date_added', 'section' );
 
 		if (isset ( $this->request->post ['filters'] ) && $this->request->post ['filters'] != '') {
 			$this->request->post ['filters'] = json_decode(html_entity_decode($this->request->post ['filters']));
@@ -93,14 +91,14 @@ class ControllerResponsesListingGridFileUploads extends AController {
 
 			$i ++;
 		}
-		$this->data = $response; // for hook access
+
+		$this->data['response'] = $response;
 		//update controller data
 		$this->extensions->hk_UpdateData($this,__FUNCTION__);
 
 		$this->load->library('json');
 		$this->response->addJSONHeader();
-		$this->response->setOutput(AJson::encode($this->data));
-
+		$this->response->setOutput(AJson::encode($this->data['response']));
 	}
 
 }

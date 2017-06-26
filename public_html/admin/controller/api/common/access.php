@@ -5,7 +5,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright 2011-2016 Belavier Commerce LLC
+  Copyright 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   License details is bundled with this package in the file LICENSE.txt.
@@ -47,7 +47,7 @@ class ControllerApiCommonAccess extends AControllerAPI {
 		}
 		
 		$ips = array_map('trim', explode(",", $this->config->get('config_admin_access_ip_list')));
-		if ( in_array($_SERVER['REMOTE_ADDR'], $ips) ){
+		if ( in_array($this->request->getRemoteIP(), $ips) ){
 			return true;
 		}
 		return false;
@@ -55,7 +55,7 @@ class ControllerApiCommonAccess extends AControllerAPI {
 	
 	public function login() {
 		$request = $this->rest->getRequestParams();
-		//allow access to listed controlles with no login
+		//allow access to listed controllers with no login
 		if (isset($request['rt']) && !isset($request['token'])) {
 			$route = '';
 			$part = explode('/', $request['rt']);

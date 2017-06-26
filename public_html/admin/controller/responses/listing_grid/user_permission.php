@@ -5,7 +5,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright © 2011-2016 Belavier Commerce LLC
+  Copyright © 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   License details is bundled with this package in the file LICENSE.txt.
@@ -21,7 +21,7 @@ if (! defined ( 'DIR_CORE' ) || !IS_ADMIN) {
 	header ( 'Location: static_pages/' );
 }
 class ControllerResponsesListingGridUserPermission extends AController {
-
+	public $data = array();
 
     public function main() {
 
@@ -48,7 +48,7 @@ class ControllerResponsesListingGridUserPermission extends AController {
 		);
 
 
-		$total = $this->model_user_user_group->getTotalUserGroups($data);
+		$total = $this->model_user_user_group->getTotalUserGroups();
 	    if( $total > 0 ) {
 			$total_pages = ceil($total/$limit);
 		} else {
@@ -79,13 +79,12 @@ class ControllerResponsesListingGridUserPermission extends AController {
 			$response->rows[$i]['cell'] = array( $name	);
 			$i++;
 		}
+	    $this->data['response'] = $response;
 
-		//update controller data
-        $this->extensions->hk_UpdateData($this,__FUNCTION__);
-
-		$this->load->library('json');
-	    $this->response->addJSONHeader();
-		$this->response->setOutput(AJson::encode($response));
+        //update controller data
+        $this->extensions->hk_UpdateData($this, __FUNCTION__);
+        $this->load->library('json');
+        $this->response->setOutput(AJson::encode($this->data['response']));
 	}
 
     /**
@@ -243,11 +242,12 @@ class ControllerResponsesListingGridUserPermission extends AController {
 			                                                                    'style' => 'btn_switch')));
 			$i++;
 		}
+		$this->data['response'] = $response;
 
-		//update controller data
-        $this->extensions->hk_UpdateData($this,__FUNCTION__);
-		$this->response->addJSONHeader();
-		$this->response->setOutput(AJson::encode($response));
+	    //update controller data
+	    $this->extensions->hk_UpdateData($this, __FUNCTION__);
+	    $this->load->library('json');
+	    $this->response->setOutput(AJson::encode($this->data['response']));
 	}
 
 }

@@ -5,7 +5,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright © 2011-2016 Belavier Commerce LLC
+  Copyright © 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   License details is bundled with this package in the file LICENSE.txt.
@@ -129,12 +129,12 @@ class ModelToolUpdater extends Model{
 					continue;
 				}
 				//skip old or current versions
-				if (versionCompare($installed[$key], $version, '>=')){
+				if (version_compare($installed[$key], $version, '>=')){
 					continue;
 				}
 				//if we have 2 or more versions for cart version
 				if(!isset($output[$key][$version])
-					|| versionCompare($installed[$key], $version, '<')){
+					|| version_compare($installed[$key], $version, '<')){
 					$version_info['version'] = $version;
 					$output[$key] = $version_info;
 				}

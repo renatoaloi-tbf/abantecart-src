@@ -5,7 +5,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright © 2011-2016 Belavier Commerce LLC
+  Copyright © 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   Lincence details is bundled with this package in the file LICENSE.txt.
@@ -98,7 +98,7 @@ class ExtensionBannerManager extends Extension {
 		if($method_name=='edit'){
 			$lm = new ALayoutManager();
 			$blocks = $lm->getAllBlocks();
-
+			$block_txt_id ='';
 			foreach ($blocks as $block) {
 				if ($block[ 'custom_block_id' ] == (int)$this->request->get['custom_block_id']) {
 					$block_txt_id = $block[ 'block_txt_id' ];
@@ -107,8 +107,7 @@ class ExtensionBannerManager extends Extension {
 			}
 
 			if($block_txt_id=='banner_block'){
-				header('Location: ' .$this->html->getSecureURL('extension/banner_manager/edit_block', '&custom_block_id=' . (int)$this->request->get['custom_block_id']));
-				exit;
+				redirect($this->html->getSecureURL('extension/banner_manager/edit_block', '&custom_block_id=' . (int)$this->request->get['custom_block_id']));
 			}
 		}
 	}
@@ -125,7 +124,7 @@ class ExtensionBannerManager extends Extension {
 								'name' => $block_id,
 								'text' => $that->language->get('text_banner_block'),
 								'href' => $that->html->getSecureURL('extension/banner_manager/insert_block', '&block_id=' . $block_id),
-								'active' => ($block_id == $this->request->get['block_id'] ? true : false),
+								'active' => ($block_id == $that->request->get['block_id'] ? true : false),
 								'sort_order' => 3);
 		}
 	}

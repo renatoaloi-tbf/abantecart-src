@@ -5,7 +5,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright © 2011-2016 Belavier Commerce LLC
+  Copyright © 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   License details is bundled with this package in the file LICENSE.txt.
@@ -61,9 +61,12 @@ class ModelCatalogManufacturer extends Model{
 			if ($data['limit'] < 1){
 				$data['limit'] = 0;
 			}
+			$cache_key = 'manufacturer.list.'.md5((int)$data['start'].(int)$data['limit']).'.store_'.$store_id;
+		} else {
+			$cache_key = 'manufacturer.list.store_'.$store_id;
+			unset($data['limit']);
 		}
 
-		$cache_key = 'manufacturer.list.'.md5((int)$data['start'].(int)$data['limit']).'.store_'.$store_id;
 		$output = $this->cache->pull( $cache_key );
 
 		if ($output !== false){

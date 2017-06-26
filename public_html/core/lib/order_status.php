@@ -5,7 +5,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright © 2011-2016 Belavier Commerce LLC
+  Copyright © 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   License details is bundled with this package in the file LICENSE.txt.
@@ -23,6 +23,8 @@ if (!defined('DIR_CORE')){
 
 /**
  * Class AOrderStatus
+ * @property ADB $db
+ * @property ACache $cache
  */
 class AOrderStatus{
 	/**
@@ -32,7 +34,7 @@ class AOrderStatus{
 	/**
 	 * @var array
 	 */
-	private $base_statuses = array (
+	protected $base_statuses = array (
 			0  => 'incomplete',
 			1  => 'pending',
 			2  => 'processing',
@@ -51,14 +53,37 @@ class AOrderStatus{
 	 */
 	protected $statuses = array ();
 
-	public function __construct(){
+	/**
+	 * AOrderStatus constructor.
+	 * @param Registry $registry
+	 */
+	public function __construct($registry = null){
+		$this->registry = $registry ? $registry : Registry::getInstance();
 		$this->statuses = $this->base_statuses;
+
+		//todo add cache
+		$cache_key = 'localization.order_status.list';
+		$order_statuses = $this->cache->pull($cache_key);
+		if($order_statuses === false) {
+			$order_statuses = $this->db->query("SELECT * FROM " . $this->db->table('order_statuses'));
+			foreach ($order_statuses as $s) {
+				if (!isset($this->statuses[$s['order_status_id']])) {
+					$this->statuses[$s['order_status_id']] = $s['status_text_id'];
+				}
+			}
+			$this->cache->push($cache_key,$this->statuses);
+		}
 	}
 
 	public function __get($key){
 		return $this->registry->get($key);
 	}
 
+	/**
+	 * @param int $order_status_id
+	 * @param string $status_text_id
+	 * @return bool
+	 */
 	public function addStatus($order_status_id, $status_text_id){
 		$order_status_id = (int)$order_status_id;
 		//preformat text_id at first
@@ -82,19 +107,33 @@ class AOrderStatus{
 		return true;
 	}
 
+	/**
+	 * @param int $order_status_text_id
+	 * @return int
+	 */
 	public function getStatusByTextId($order_status_text_id){
 		$flipped = array_flip($this->statuses);
 		return $flipped[$order_status_text_id];
 	}
 
+	/**
+	 * @param int $order_status_id
+	 * @return string
+	 */
 	public function getStatusById($order_status_id){
 		return $this->statuses[$order_status_id];
 	}
 
+	/**
+	 * @return array
+	 */
 	public function getStatuses(){
 		return $this->statuses;
 	}
 
+	/**
+	 * @return array
+	 */
 	public function getBaseStatuses(){
 		return $this->base_statuses;
 	}

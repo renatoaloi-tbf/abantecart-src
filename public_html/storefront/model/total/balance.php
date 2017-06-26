@@ -5,7 +5,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright © 2011-2016 Belavier Commerce LLC
+  Copyright © 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   License details is bundled with this package in the file LICENSE.txt.
@@ -22,6 +22,7 @@ if (! defined ( 'DIR_CORE' )) {
 }
 class ModelTotalBalance extends Model {
 	public function getTotal(&$total_data, &$total, &$taxes, &$cust_data) {
+
 		if ($this->config->get('balance_status')) {
 			if((float)$cust_data['used_balance']){
 				$total_data[] = array(

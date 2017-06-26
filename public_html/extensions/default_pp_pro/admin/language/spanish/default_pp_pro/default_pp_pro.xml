@@ -60,10 +60,10 @@
 		<key>default_pp_pro_transaction_0</key>
 		<value><![CDATA[Sale]]></value>
 	</definition>
-	<definition>	
+	<definition>
 		<key>default_pp_pro_creditcard_types</key>
 		<value><![CDATA[Tipos de tarjetas de crédito:<br /><span class="help">Consulte con PayPal qué tarjetas de crédito su poder para aceptar para su país y seleccionar de la lista.</span>]]></value>
-	</definition>		
+	</definition>
 	<definition>
 		<key>default_pp_pro_order_status_id</key>
 		<value><![CDATA[Estado del pedido:]]></value>
@@ -76,10 +76,6 @@
 		<key>default_pp_pro_location_id_0</key>
 		<value><![CDATA[All Locations]]></value>
 	</definition>
-  	<definition>
-    	<key>default_pp_pro_autoselect</key>
-    	<value><![CDATA[Selección automática:<br /><span class="help">Se puede configurar para que omita la página de pago selección si sólo hay una opción de pago. Esta forma de pago se seleccionará automáticamente</span>]]></value>
-  	</definition>		
 	<definition>
 		<key>error_permission</key>
 		<value><![CDATA[Atención: No tiene permisos para modificar su cuenta PayPal Pro!]]></value>
@@ -154,7 +150,7 @@
 	</definition>
 	<definition>
 		<key>text_api_credentials_note_sandbox</key>
-		<value><![CDATA[To test transactions, please provide your Sandbox PayPal API credentials.]]></value>
+		<value><![CDATA[To test transactions, please provide your Sandbox PayPal Pro API credentials.]]></value>
 	</definition>
 	<definition>
 		<key>button_get_api_credentials_sandbox</key>

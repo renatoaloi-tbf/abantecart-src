@@ -5,7 +5,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright © 2011-2016 Belavier Commerce LLC
+  Copyright © 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   Lincence details is bundled with this package in the file LICENSE.txt.
@@ -29,61 +29,83 @@ class ControllerResponsesExtensionDefaultAuthorizeNetAim extends AController {
 
 		$this->loadLanguage('default_authorizenet_aim/default_authorizenet_aim');
 
+        $data['action'] = $this->html->getSecureURL('extension/default_authorizenet_aim/send');
+
+        //build submit form
+        $form = new AForm();
+        $form->setForm(array( 'form_name' => 'authorizenet' ));
+        $data['form_open'] = $form->getFieldHtml(
+            array(
+                'type' => 'form',
+                'name' => 'authorizenet',
+                'attr' => 'class = "form-horizontal validate-creditcard"',
+                'csrf' => true
+            )
+        );
+
 		$data['text_credit_card'] = $this->language->get('text_credit_card');
 		$data['text_wait'] = $this->language->get('text_wait');
-
 		$data['entry_cc_owner'] = $this->language->get('entry_cc_owner');
-		$data['cc_owner'] = HtmlElementFactory::create(array( 'type' => 'input',
-		                                                      'name' => 'cc_owner',
-		                                                      'value' => '' ));
-
+		$data['cc_owner'] = $form->getFieldHtml(
+		    array(
+		        'type' => 'input',
+                'name' => 'cc_owner',
+                'value' => ''
+            )
+        );
 		$data['entry_cc_number'] = $this->language->get('entry_cc_number');
-		$data['cc_number'] = HtmlElementFactory::create(array( 'type' => 'input',
-		                                                       'name' => 'cc_number',
-		                                                       'attr' => 'autocomplete="off"',
-		                                                       'value' => '' ));
-
+		$data['cc_number'] = $form->getFieldHtml(
+		    array(
+		        'type' => 'input',
+                'name' => 'cc_number',
+                'attr' => 'autocomplete="off"',
+                'value' => ''
+            )
+        );
 		$data['entry_cc_expire_date'] = $this->language->get('entry_cc_expire_date');
-
 		$data['entry_cc_cvv2'] = $this->language->get('entry_cc_cvv2');
 		$data['entry_cc_cvv2_short'] = $this->language->get('entry_cc_cvv2_short');
 		$data['cc_cvv2_help_url'] = $this->html->getURL('r/extension/default_authorizenet_aim/cvv2_help');
-
-		$data['cc_cvv2'] = HtmlElementFactory::create(array( 'type' => 'input',
-		                                                     'name' => 'cc_cvv2',
-		                                                     'value' => '',
-		                                                     'style' => 'short input-mini',
-		                                                     'attr' => ' size="3" autocomplete="off"'
-		                                                ));
-
+		$data['cc_cvv2'] = $form->getFieldHtml(
+		    array(
+		        'type' => 'input',
+                'name' => 'cc_cvv2',
+                'value' => '',
+                'style' => 'short input-mini',
+                'attr' => ' size="3" autocomplete="off"'
+            )
+        );
 		$data['button_confirm'] = $this->language->get('button_confirm');
 		$data['button_back'] = $this->language->get('button_back');
 
 		$months = array();
-
 		for ($i = 1; $i <= 12; $i++) {
 			$months[ sprintf('%02d', $i) ] = strftime('%B', mktime(0, 0, 0, $i, 1, 2000));
 		}
-		$data['cc_expire_date_month'] = HtmlElementFactory::create(
-			array( 'type' => 'selectbox',
-			     'name' => 'cc_expire_date_month',
-			     'value' => sprintf('%02d', date('m')),
-			     'options' => $months,
-			     'style' => 'short input-small'
-			));
+		$data['cc_expire_date_month'] = $form->getFieldHtml(
+			array(
+			    'type' => 'selectbox',
+                'name' => 'cc_expire_date_month',
+                'value' => sprintf('%02d', date('m')),
+                'options' => $months,
+                'style' => 'short input-small'
+			)
+        );
 
 		$today = getdate();
 		$years = array();
 		for ($i = $today['year']; $i < $today['year'] + 11; $i++) {
 			$years[ strftime('%Y', mktime(0, 0, 0, 1, 1, $i)) ] = strftime('%Y', mktime(0, 0, 0, 1, 1, $i));
 		}
-		$data['cc_expire_date_year'] = HtmlElementFactory::create(
-			array( 'type' => 'selectbox',
+		$data['cc_expire_date_year'] = $form->getFieldHtml(
+			array(
+			    'type' => 'selectbox',
 			    'name' => 'cc_expire_date_year',
 			    'value' => sprintf('%02d', date('Y') + 1),
 			    'options' => $years,
 			    'style' => 'short input-small' 
-			));
+			)
+        );
 
 		if ($this->request->get['rt'] == 'checkout/guest_step_3') {
 			$back_url = $this->html->getSecureURL('checkout/guest_step_2','&mode=edit',true);
@@ -180,6 +202,16 @@ class ControllerResponsesExtensionDefaultAuthorizeNetAim extends AController {
 
 
 	public function send() {
+        $json = array();
+        $data = array();
+
+        if(!$this->csrftoken->isTokenValid()){
+            $json['error'] = $this->language->get('error_unknown');
+            $this->load->library('json');
+            $this->response->setOutput(AJson::encode($json));
+            return;
+        }
+
 		if ($this->config->get('default_authorizenet_aim_mode') == 'live') {
 			$url = 'https://secure.authorize.net/gateway/transact.dll';
 		} elseif ($this->config->get('default_authorizenet_aim_mode') == 'test') {
@@ -216,8 +248,6 @@ class ControllerResponsesExtensionDefaultAuthorizeNetAim extends AController {
 
 		$order_info = $this->model_checkout_order->getOrder($this->session->data['order_id']);
 
-		$data = array();
-
 		$data['x_login'] = $this->config->get('default_authorizenet_aim_login');
 		$data['x_tran_key'] = $this->config->get('default_authorizenet_aim_key');
 		$data['x_version'] = '3.1';
@@ -234,7 +264,7 @@ class ControllerResponsesExtensionDefaultAuthorizeNetAim extends AController {
 		$data['x_zip'] = html_entity_decode($order_info['payment_postcode'], ENT_QUOTES, 'UTF-8');
 		$data['x_country'] = html_entity_decode($order_info['payment_country'], ENT_QUOTES, 'UTF-8');
 		$data['x_phone'] = $order_info['telephone'];
-		$data['x_customer_ip'] = $this->request->server['REMOTE_ADDR'];
+		$data['x_customer_ip'] = $this->request->getRemoteIP();
 		$data['x_email'] = $order_info['email'];
 		$data['x_description'] = html_entity_decode($this->config->get('store_name'), ENT_QUOTES, 'UTF-8');
 		$data['x_amount'] = $this->currency->format($order_info['total'], $order_info['currency'], 1.00000, FALSE);
@@ -277,8 +307,6 @@ class ControllerResponsesExtensionDefaultAuthorizeNetAim extends AController {
 
 			$i++;
 		}
-
-		$json = array();
 
 		//build responce message for records
 		$message = '';

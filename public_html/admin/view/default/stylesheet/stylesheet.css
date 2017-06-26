@@ -397,7 +397,10 @@ h1 a:hover, h2 a:hover, h3  a:hover {
 .headermenu .btn-group {
 	margin-bottom: 0;
 }
-
+.headermenu #language_form ul.dropdown-list img{
+	width: 16px;
+	height: 11px;
+}
 .dropdown-list li {
    padding: 10px;
    overflow: hidden;
@@ -2325,6 +2328,9 @@ body.stickyheader .sticky_left {
    border: 3px solid #EEEEEE;
 }
 
+.mb0 {
+	margin-bottom: 0;
+}
 .mb5 {
 	margin-bottom: 5px;
 }
@@ -3311,12 +3317,13 @@ body.stickyheader .sticky_left {
 }
 
 #task_modal .modal-body div{
-   font-size: 16px;
-   margin: 5px;
-   padding: 5px;
-   line-height: 27px;
+   font-size: 14px;
+   line-height: 21px;
 }
 
+#task_modal .modal-body .progress-info{
+    padding: 10px 20px 5px 10px;
+}
 #task_modal .modal-body div.progress, #task_modal .modal-body div.progress-bar{
    height: 31px;
    padding: 0;
@@ -3326,9 +3333,30 @@ body.stickyheader .sticky_left {
    margin: 0;
 }
 #task_modal .modal-body div.progress-bar{
-   margin: 0;
-   padding: 3px;
-
+    margin: 0;
+    padding: 5px;
+}
+#task_modal .modal-body div.task_result_message{
+    max-height: 450px;
+    padding-top: 20px;
+}
+#task_modal .modal-body div.task_result_message div{
+    margin-top: 2px;
+    padding: 5px;
+}
+#task_modal .modal-body a.details-button {
+    text-decoration: none;
+}
+#task_modal .modal-body a.details-button:after {
+    font-family: FontAwesome;
+    content: "\f066";
+    font-size: 20px;
+    font-weight: 400;
+    position: relative;
+}
+#task_modal .modal-body a.details-button.collapsed:after {
+    font-family: FontAwesome;
+    content: "\f065";
 }
 
 .input-group-cell{
@@ -3348,4 +3376,22 @@ body.stickyheader .sticky_left {
 
 #getEmbedFrm .control-label{
    padding-top: 2px;
+}
+
+img.extension-summary-icon{
+	width: 57px;
+}
+
+.stars{
+	cursor: default;
+}
+.fa-star, .fa-star-o{
+	margin-right: 2px;
+}
+.fa-star::before, .fa-star-o::before{
+	color: gold;
+}
+
+.ext_store span.review{
+	white-space: nowrap;
 }

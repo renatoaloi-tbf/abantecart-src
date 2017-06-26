@@ -5,7 +5,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright © 2011-2016 Belavier Commerce LLC
+  Copyright © 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   License details is bundled with this package in the file LICENSE.txt.
@@ -123,7 +123,7 @@ final class ARequest{
 
 	private function _detectBrowser(){
 
-		$nua = strToLower($_SERVER['HTTP_USER_AGENT']);
+		$nua = strtolower($_SERVER['HTTP_USER_AGENT']);
 
 		$agent['http'] = isset($nua) ? $nua : "";
 		$agent['version'] = 'unknown';
@@ -144,8 +144,7 @@ final class ARequest{
 		for ($i = 0; $i < count($browsers); $i++){
 			if (strlen(stristr($nua, $browsers[$i])) > 0){
 				$agent["browser"] = $browsers[$i];
-				$n = stristr($nua, $agent["browser"]);
-				$j = strpos($nua, $agent["browser"]) + $n + strlen($agent["browser"]) + 1;
+				break;
 			}
 		}
 
@@ -189,6 +188,17 @@ final class ARequest{
 
 	public function getVersion(){
 		return $this->version;
+	}
+
+	public function getRemoteIP(){
+		if (!empty($this->server['HTTP_CLIENT_IP'])) {
+		    $ip = $this->server['HTTP_CLIENT_IP'];
+		} elseif (!empty($this->server['HTTP_X_FORWARDED_FOR'])) {
+		    $ip = $this->server['HTTP_X_FORWARDED_FOR'];
+		} else {
+		    $ip = $this->server['REMOTE_ADDR'];
+		}
+		return $ip;
 	}
 
 	/**

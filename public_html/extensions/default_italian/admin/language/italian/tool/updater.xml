@@ -62,11 +62,11 @@
 	</definition>
 	<definition>
 		<key>text_notice_title</key>
-		<value><![CDATA[]]>Update Notice for %EXTENSION%</value>
+		<value><![CDATA[Update Notice for %EXTENSION%]]></value>
 	</definition>
 	<definition>
 		<key>text_notice_text</key>
-		<value><![CDATA[]]>'New version of extension "%EXTENSION%" is available. Please, go to %LINK% and upgrade it.'</value>
+		<value><![CDATA[New version of extension "%EXTENSION%" is available. Please, go to %LINK% and upgrade it.]]></value>
 	</definition>
 	<definition>
 		<key>warning_updates</key>
@@ -95,5 +95,9 @@
 	<definition>
 		<key>text_marketplace_connect_your_store</key>
 		<value><![CDATA[Collegate il vostro negozio al Marketplace]]></value>
+	</definition>
+	<definition>
+		<key>text_note</key>
+		<value><![CDATA[Nota: Aggiornamento disponibile solo per i negozi collegati con la storia acquistato.]]></value>
 	</definition>
 </definitions>

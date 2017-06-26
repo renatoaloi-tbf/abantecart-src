@@ -1,5 +1,6 @@
 <form action="<?php echo str_replace('&', '&amp;', $action); ?>" method="post" id="checkout">
 	<input type="hidden" name="sid" value="<?php echo $sid; ?>"/>
+	<input type="hidden" name="currency_code" value="<?php echo $currency_code; ?>"/>
 	<input type="hidden" name="total" value="<?php echo $total; ?>"/>
 	<input type="hidden" name="cart_order_id" value="<?php echo $cart_order_id; ?>"/>
 	<input type="hidden" name="merchant_order_id" value="<?php echo $cart_order_id; ?>"/>
@@ -36,7 +37,7 @@
 
 	<div class="form-group action-buttons">
 	    <div class="col-md-12">
-	    	<button id="checkout_btn" class="btn btn-orange pull-right" title="<?php echo $button_confirm; ?>">
+	    	<button id="checkout_btn" class="btn btn-orange pull-right lock-on-click" title="<?php echo $button_confirm; ?>">
 	    	    <i class="fa fa-check"></i>
 	    	    <?php echo $button_confirm; ?>
 	    	</button>

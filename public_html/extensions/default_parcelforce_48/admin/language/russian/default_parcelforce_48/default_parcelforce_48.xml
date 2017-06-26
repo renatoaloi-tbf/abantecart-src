@@ -14,7 +14,7 @@
   </definition>
   <definition>
     <key>default_parcelforce_48_rate</key>
-    <value><![CDATA[Parcelforce 48 цены:<br /><span class="help">Введите значения до 5,2 знаков после запятой. (12345,67) Пример: .1:1,.25:1.27 - Вес меньше или равен 0,1 кг будет стоить 1,00, вес меньше или равный 0,25 г но больше, чем 0,1 кг будет стоить 1,27. Не вводить КГ или символы!</span>]]></value>
+    <value><![CDATA[Parcelforce 48 цены:<br /><span class="help">Пример: 0:0,10:15.99,12:19.99, - Вес менее или равный 10 фунтам будет стоить 15,99 доллара США, вес менее 12 фунтов, но более 10 фунтов будет стоить 19,99 доллара. Где фунт - ваш класс веса в магазине и $ - валюта магазина. Вы можете изменить оба в настройках магазина. Не вводите KG или какие-либо символы. Введите значения до 5,2 знаков после запятой. (12345,67)</span>]]></value>
   </definition>
   <definition>
     <key>default_parcelforce_48_display_weight</key>
@@ -71,14 +71,6 @@
   <definition>
     <key>default_parcelforce_48_location_id_0</key>
     <value><![CDATA[Все местоположения]]></value>
-  </definition>
-  <definition>
-    <key>default_parcelforce_48_autoselect</key>
-    <value><![CDATA[Автоматический выбор:<br /><span class="help">Включить, чтобы пропустить по страницу выбора доставки, если есть только один вариант доставки. Этот метод доставка будет выбран автоматически</span>]]></value>
-  </definition>
-  <definition>
-    <key>default_parcelforce_48_accept_payments</key>
-    <value><![CDATA[Примите эти платежи: <br /> <span class="help">Если только конкретные способы оплаты необходимы для этого способ доставки, выбрать их здесь. Если ничего не выбрано, все доступные способы оплаты будет показано</span>]]></value>
   </definition>
   <definition>
     <key>error_permission</key>

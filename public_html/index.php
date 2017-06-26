@@ -5,7 +5,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright © 2011-2016 Belavier Commerce LLC
+  Copyright © 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   License details is bundled with this package in the file LICENSE.txt.
@@ -81,7 +81,6 @@ if (!defined('IS_ADMIN') || !IS_ADMIN ) { // storefront load
 	
 	// User
 	$registry->set('user', new AUser($registry));
-					
 }// end admin load
 
 // Currency
@@ -94,6 +93,11 @@ $router->processRoute(ROUTE);
 
 // Output
 $registry->get('response')->output();
+
+if( IS_ADMIN === true && $registry->get('config')->get('config_maintenance') && $registry->get('user')->isLogged() ) {
+	$user_id = $registry->get('user')->getId();
+	startStorefrontSession($user_id);
+}
 
 //Show cache stats if debugging
 if($registry->get('config')->get('config_debug')){

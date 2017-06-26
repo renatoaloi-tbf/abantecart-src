@@ -5,7 +5,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright © 2011-2016 Belavier Commerce LLC
+  Copyright © 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   License details is bundled with this package in the file LICENSE.txt.
@@ -29,17 +29,17 @@ class ControllerPagesAccountNotification extends AController {
 
 		if (!$this->customer->isLogged()) {
 	  		$this->session->data['redirect'] = $this->html->getSecureURL('account/notification');
-	  		$this->redirect($this->html->getSecureURL('account/login'));
+	  		redirect($this->html->getSecureURL('account/login'));
     	} 
 		
 		$this->document->setTitle( $this->language->get('heading_title') );
 
 		$this->loadModel('account/customer');
 
-		if ($this->request->is_POST()) {
+		if ($this->request->is_POST() && $this->csrftoken->isTokenValid()) {
 			$this->model_account_customer->saveCustomerNotificationSettings($this->request->post['settings']);
 			$this->session->data['success'] = $this->language->get('text_success');
-			$this->redirect($this->html->getSecureURL('account/account'));
+			redirect($this->html->getSecureURL('account/account'));
 		}
 
       	$this->document->resetBreadcrumbs();
@@ -68,7 +68,10 @@ class ControllerPagesAccountNotification extends AController {
 		        array(
                     'type' => 'form',
                     'name' => 'imFrm',
-                    'action' => $this->html->getSecureURL('account/notification') ));
+                    'action' => $this->html->getSecureURL('account/notification'),
+                    'csrf' => true
+                )
+        );
 
 		$protocols = $this->im->getActiveProtocols('storefront');
 		$im_drivers = $this->im->getIMDriverObjects();
@@ -107,6 +110,7 @@ class ControllerPagesAccountNotification extends AController {
 		    	}
 		    	if(!$customer_info[$protocol]) {
 		    		$read_only = ' disabled readonly ';
+				    $checked = false;
 		    	} else if(has_value($force_arr) && in_array($protocol, $force_arr)) {
 		    		$read_only = ' disabled readonly ';
 		    		$checked = true;

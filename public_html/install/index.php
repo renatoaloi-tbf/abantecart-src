@@ -6,7 +6,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright © 2011-2016 Belavier Commerce LLC
+  Copyright © 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   License details is bundled with this package in the file LICENSE.txt.
@@ -57,18 +57,18 @@ if (file_exists(DIR_SYSTEM . 'config.php')){
 $data_exist = false;
 if ( defined('DB_HOSTNAME') && DB_HOSTNAME ) {
 	$db = new ADB(DB_DRIVER, DB_HOSTNAME, DB_USERNAME, DB_PASSWORD, DB_DATABASE);
-    $r = $db->query("SELECT product_id FROM ".DB_PREFIX."products");
+    $r = $db->query("SELECT * FROM ".DB_PREFIX."settings");
     $data_exist = $r->num_rows;
 } else {
     unset($session->data['finish']);
 }
 
-if ( $data_exist && empty($session->data['finish']) ) {
+if ( $data_exist && !isset($session->data['finish']) ) {
     session_destroy();
     header('Location: ../');
 }
 
-if ( !empty($session->data['finish']) && $session->data['finish'] == 'true' ) {
+if ( isset($session->data['finish']) && $session->data['finish'] == 'true' ) {
     $request->get['rt'] = 'finish';
 }
 

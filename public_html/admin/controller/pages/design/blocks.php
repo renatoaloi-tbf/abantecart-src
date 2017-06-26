@@ -5,7 +5,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright © 2011-2016 Belavier Commerce LLC
+  Copyright © 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   License details is bundled with this package in the file LICENSE.txt.
@@ -23,7 +23,7 @@ if (!defined('DIR_CORE') || !IS_ADMIN) {
 
 class ControllerPagesDesignBlocks extends AController {
 	public $data = array('custom_block_types' => array('html_block', 'listing_block'));
-	private $error = array();
+	public $error = array();
 
 	public function main() {
 

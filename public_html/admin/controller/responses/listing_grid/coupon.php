@@ -5,7 +5,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright © 2011-2016 Belavier Commerce LLC
+  Copyright © 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   License details is bundled with this package in the file LICENSE.txt.
@@ -21,7 +21,8 @@ if (! defined ( 'DIR_CORE' ) || !IS_ADMIN) {
 	header ( 'Location: static_pages/' );
 }
 class ControllerResponsesListingGridCoupon extends AController {
-
+	public $data = array();
+	public $error;
     public function main() {
 
 	    //init controller data
@@ -40,7 +41,7 @@ class ControllerResponsesListingGridCoupon extends AController {
 		}
 
 	    $response = new stdClass();
-		$response->page = $page;
+		$response->page = $this->request->post['page'];
 		$response->total = $total_pages;
 		$response->records = $total;
 
@@ -48,7 +49,7 @@ class ControllerResponsesListingGridCoupon extends AController {
 	    $i = 0;
 		$now = time();
 		foreach ($results as $result) {
-			// check daterange
+			// check date range
 			if ( dateISO2Int($result[ 'date_start' ]) > $now || dateISO2Int($result[ 'date_end' ]) < $now ) {
 				$result['status'] = 0;
 			}
@@ -68,13 +69,13 @@ class ControllerResponsesListingGridCoupon extends AController {
 			);
 			$i++;
 		}
-
+	    $this->data['response'] = $response;
 		//update controller data
         $this->extensions->hk_UpdateData($this,__FUNCTION__);
 
 		$this->load->library('json');
 		$this->response->addJSONHeader();
-		$this->response->setOutput(AJson::encode($response));
+		$this->response->setOutput(AJson::encode($this->data['response']));
 	}
 
 	public function update() {
@@ -214,8 +215,9 @@ class ControllerResponsesListingGridCoupon extends AController {
 				}
 				break;
 		}
-
-		return $err;
+		$this->error = $err;
+		$this->extensions->hk_ValidateData($this);
+		return $this->error;
   	}
 
 

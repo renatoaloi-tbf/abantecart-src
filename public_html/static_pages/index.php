@@ -6,7 +6,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright © 2011-2016 Belavier Commerce LLC
+  Copyright © 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   License details is bundled with this package in the file LICENSE.txt.
@@ -27,8 +27,10 @@ if (defined('IS_WINDOWS')) {
 define('DIR_ROOT', $root_path); 
 
 // HTTP
-define('HTTP_SERVER', 'http://' . $_SERVER['HTTP_HOST'] . rtrim(dirname($_SERVER['PHP_SELF']), '/.\\') . '/');
-define('HTTP_ABANTECART', 'http://' . $_SERVER['HTTP_HOST'] . rtrim(rtrim(dirname($_SERVER['PHP_SELF']), 'static_pages'), '/.\\'). '/');
+$dirname = rtrim(dirname($_SERVER['PHP_SELF']), '/.\\');
+$dirname = strip_tags(html_entity_decode($dirname,ENT_QUOTES,'UTF-8'));
+define('HTTP_SERVER', 'http://' . $_SERVER['HTTP_HOST'] . $dirname);
+define('HTTP_ABANTECART', 'http://' . $_SERVER['HTTP_HOST'] . trim($dirname,'static_pages'));
 
 // DIR
 define('DIR_APP_SECTION', str_replace('\'', '/', realpath(dirname(__FILE__))) . '/');

@@ -5,7 +5,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright © 2011-2016 Belavier Commerce LLC
+  Copyright © 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   License details is bundled with this package in the file LICENSE.txt.
@@ -62,7 +62,7 @@ define('DIR_VENDORS', DIR_CORE . '/vendors/');
 define('SEO_URL_SEPARATOR', '-');
 
 // EMAIL REGEXP PATTERN
-define('EMAIL_REGEX_PATTERN','/^[A-Z0-9._%-]+@[A-Z0-9][A-Z0-9.-]{0,61}[A-Z0-9]\.[A-Z]{2,16}$/i');
+define('EMAIL_REGEX_PATTERN','/^[A-Z0-9._%-]+@[A-Z0-9.-]{0,61}[A-Z0-9]\.[A-Z]{2,16}$/i');
 
 // Error Reporting
 error_reporting(E_ALL);
@@ -100,7 +100,7 @@ if (defined('ADMIN_PATH') && (isset($_GET['s']) || isset($_POST['s'])) && ($_GET
 	define('DIR_STOREFRONT', DIR_ROOT . '/storefront/');
 	define('DIR_BACKUP', DIR_ROOT . '/admin/system/backup/');
 	define('DIR_DATA', DIR_ROOT . '/admin/system/data/');
-	//generate unique sessioin name. 
+	//generate unique session name.
 	//NOTE: This is a session name not to confuse with actual session id. Candidate to renaming 
 	define('SESSION_ID', defined('UNIQUE_ID') ? 'AC_CP_'.strtoupper(substr(UNIQUE_ID, 0, 10)) : 'AC_CP_PHPSESSID');
 } else {
@@ -267,6 +267,7 @@ try {
 	require_once(DIR_CORE . 'lib/listing.php');
 	require_once(DIR_CORE . 'lib/task_manager.php');
 	require_once(DIR_CORE . 'lib/im.php');
+    require_once(DIR_CORE . 'lib/csrf_token.php');
 
 //Admin manager classes
 	if (IS_ADMIN === true) {
@@ -324,6 +325,9 @@ try {
 	if($config->has('current_store_id')){
 		$registry->get('session')->data['current_store_id'] = $config->get('current_store_id');
 	}
+
+// CSRF Token Class
+    $registry->set('csrftoken', new CSRFToken());
 
 // Set up HTTP and HTTPS based automatic and based on config
 	if (IS_ADMIN === true) {
@@ -429,6 +433,7 @@ try {
 	unset($extensions);
 
 //check if we specify template directly
+	$template = 'default';
 	if (IS_ADMIN !== true && !empty($request->get['sf'])) {
 		$template = preg_replace('/[^A-Za-z0-9_]+/', '', $request->get['sf']);
 		$dir = $template . DIR_EXT_STORE . DIR_EXT_TEMPLATE . $template;
@@ -491,7 +496,7 @@ try {
 	$hook->hk_InitEnd();
 
 //load order status class
-	$registry->set('order_status',new AOrderStatus());
+	$registry->set('order_status',new AOrderStatus($registry));
 
 //IM
 	if(IS_ADMIN===true){

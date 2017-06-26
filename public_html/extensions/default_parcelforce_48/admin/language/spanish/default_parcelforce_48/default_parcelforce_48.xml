@@ -14,7 +14,7 @@
   </definition>
   <definition>
     <key>default_parcelforce_48_rate</key>
-    <value><![CDATA[Parcelforce 48 Rates:<br /><span class="help">Entre los valores hasta que 5,2 decimales. (12.345,67) Ejemplo: .1:1, .25:1.27 - Pesos menos que o igual a 0,1 kg costar�a 1,00, pesa menos que o igual a 0.25g, pero m�s de 0,1 kg cuesta 1,27. No entre KG o s�mbolos.</span>]]></value>
+    <value><![CDATA[Parcelforce 48 Rates:<br /><span class="help">Ejemplo: 0:0,10:15,99,12:19,99, - Pesos menores o iguales a 10 libras costarían $ 15,99, Pesos menos de 12 libras, pero más de 10 libras costará $ 19,99. Donde Pound es tu tienda La clase Weight y $ es la moneda base de la tienda. Puede cambiar ambos en la configuración de tienda. No ingrese KG ni símbolos. Introduzca valores hasta 5,2 decimales. (12345.67)</span>]]></value>
   </definition>
   <definition>
     <key>default_parcelforce_48_display_weight</key>
@@ -72,14 +72,6 @@
     <key>default_parcelforce_48_location_id_0</key>
     <value><![CDATA[Todos las Localidades]]></value>
   </definition>
-  <definition>
-    <key>default_parcelforce_48_autoselect</key>
-    <value><![CDATA[Selección automática:<br /><span class="help">Se puede configurar para que omita página de envío selección si sólo hay una opción de envío. Este método de envío se seleccionará automáticamente</span>]]></value>  
-  </definition>
-  <definition>
-    <key>default_parcelforce_48_accept_payments</key>
-    <value><![CDATA[Acepte los siguientes pagos:<br /><span class="help">Si sólo los métodos de pago específicos son necesarios para este envío, seleccione aquí. Si no hay nada seleccionado, todos los métodos de pago disponibles se mostrará</span>]]></value>
-  </definition>  
   <definition>
     <key>error_permission</key>
     <value><![CDATA[Advertencia: No tiene permiso para modificar el envio por Parcelforce 48!]]></value>

@@ -5,7 +5,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright © 2011-2016 Belavier Commerce LLC
+  Copyright © 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   License details is bundled with this package in the file LICENSE.txt.
@@ -22,7 +22,7 @@ if (! defined ( 'DIR_CORE' ) || !IS_ADMIN) {
 }
 class ControllerResponsesListingGridTask extends AController {
 	private $error = array ();
-	
+	public $data = array();
 	public function main() {
 		//init controller data
 		$this->extensions->hk_InitData($this,__FUNCTION__);
@@ -42,7 +42,7 @@ class ControllerResponsesListingGridTask extends AController {
 		$limit = $this->request->post ['rows']; // get how many rows we want to have into the grid
 
 		//Prepare filter config
-		$grid_filter_params = array('name');
+		$grid_filter_params =  array_merge(array('name'), (array)$this->data['grid_filter_params']);
 		$filter = new AFilter( array( 'method' => 'post', 'grid_filter_params' => $grid_filter_params ) );
 		$filter_data = $filter->getFilterData();
 
@@ -61,54 +61,69 @@ class ControllerResponsesListingGridTask extends AController {
 		$response->records = $total;
 		$response->userdata = new stdClass();
 
+		$i = 0;
+		foreach ( $results as $result ) {
 
-			$i = 0;
-			foreach ( $results as $result ) {
+			$id = $result ['task_id'];
+			$response->rows [$i] ['id'] = $id;
 
-				$id = $result ['task_id'];
-				$response->rows [$i] ['id'] = $id;
-
-				$status = $result['status'];
-				//if task works more than 30min - we think it's stuck
-				if($status == 2 && time() - dateISO2Int($result['start_time']) > 1800){
-					$status = -1;
-				}
-
-				switch($status){
-					case -1: // stuck
-						$response->userdata->classes[ $id ] = 'warning disable-run disable-edit';
-						$text_status = $this->language->get('text_active');
-						break;
-					case 1: // scheduled
-						$response->userdata->classes[ $id ] = 'success disable-restart disable-edit';
-						$text_status = $this->language->get('text_scheduled');
-						break;
-					case 2: //disable all buttons for active tasks
-						$response->userdata->classes[ $id ] = 'attention disable-run disable-restart disable-edit disable-delete';
-						$text_status = $this->language->get('text_active');
-						break;
-					default: // disabled
-						$response->userdata->classes[ $id ] = 'attention disable-run disable-restart disable-edit disable-delete';
-						$text_status = $this->language->get('text_disabled');
-
-				}
-
-				$response->rows [$i] ['cell'] = array (
-														$result ['task_id'],
-														$result ['name'],
-														$text_status,
-														dateISO2Display($result ['start_time'],$this->language->get('date_format_short'). ' '. $this->language->get('time_format')),
-														dateISO2Display($result ['date_modified'],$this->language->get('date_format_short'). ' '. $this->language->get('time_format')),
-														);
-
-				$i ++;
+			$status = $result['status'];
+			//if task works more than 30min - we think it's stuck
+			if($status == 2 && time() - dateISO2Int($result['start_time']) > 1800){
+				$status = -1;
 			}
-	
-		//update controller data
-		$this->extensions->hk_UpdateData($this,__FUNCTION__);
-		
-		$this->load->library('json');
-		$this->response->setOutput(AJson::encode($response));
+
+			switch($status){
+				case -1: // stuck
+					$response->userdata->classes[ $id ] = 'warning disable-run disable-edit';
+					$text_status = $this->language->get('text_stuck');
+					break;
+				case $tm::STATUS_READY:
+					$response->userdata->classes[ $id ] = 'success disable-restart disable-edit';
+					$text_status = $this->language->get('text_ready');
+					break;
+				case $tm::STATUS_RUNNING:
+					//disable all buttons for running tasks
+					$response->userdata->classes[ $id ] = 'attention disable-run disable-restart disable-edit disable-delete';
+					$text_status = $this->language->get('text_running');
+					break;
+				case $tm::STATUS_FAILED:
+					$response->userdata->classes[ $id ] = 'attention disable-run';
+					$text_status = $this->language->get('text_failed');
+					break;
+				case $tm::STATUS_SCHEDULED:
+					$response->userdata->classes[ $id ] = 'success disable-restart disable-edit';
+					$text_status = $this->language->get('text_scheduled');
+					break;
+				case $tm::STATUS_COMPLETED:
+					$response->userdata->classes[ $id ] = 'disable-run disable-edit';
+					$text_status = $this->language->get('text_completed');
+					break;
+				case $tm::STATUS_INCOMPLETE:
+					$response->userdata->classes[ $id ] = 'disable-run disable-edit';
+					$text_status = $this->language->get('text_incomplete');
+					break;
+				default: // disabled
+					$response->userdata->classes[ $id ] = 'attention disable-run disable-restart disable-edit disable-delete';
+					$text_status = $this->language->get('text_disabled');
+			}
+
+			$response->rows [$i] ['cell'] = array (
+													$result ['task_id'],
+													$result ['name'],
+													$text_status,
+													dateISO2Display($result ['start_time'],$this->language->get('date_format_short'). ' '. $this->language->get('time_format')),
+													dateISO2Display($result ['date_modified'],$this->language->get('date_format_short'). ' '. $this->language->get('time_format')),
+													);
+
+			$i ++;
+		}
+		$this->data['response'] = $response;
+
+	    //update controller data
+	    $this->extensions->hk_UpdateData($this, __FUNCTION__);
+	    $this->load->library('json');
+	    $this->response->setOutput(AJson::encode($this->data['response']));
 		
 	}
 
@@ -117,32 +132,81 @@ class ControllerResponsesListingGridTask extends AController {
 		$this->extensions->hk_InitData($this,__FUNCTION__);
 
 		$this->load->library('json');
+		$this->load->language('tool/task');
 		$this->response->addJSONHeader();
+		$task_id = (int)$this->request->post_or_get('task_id');
+		$tm = new ATaskManager();
+		$task = $tm->getTaskById($task_id);
 
-		if(has_value($this->request->post_or_get('task_id'))){
-			$tm = new ATaskManager();
-			$task = $tm->getTaskById($this->request->post_or_get('task_id'));
-
-			//check
-			if($task && $task['status'] == 2 && time() - dateISO2Int($task['start_time']) > 1800){
-				foreach($task['steps'] as $step){
-					$tm->updateStep($step['step_id'], array('status'=>1));
-				}
-				$tm->updateTask($task['task_id'], array(
-													'status' => 1, //scheduled
-													'start_time' => date('Y-m-d H:i:s'),
-													'last_result' => 2 //interrupted
-														));
-			}
-			$this->_run_task();
-		}else{
-			$this->response->setOutput(AJson::encode(array('result'=> false)));
+		if(!$task_id || !$task){
+			$err = new AError('Task runtime error');
+			return $err->toJSONResponse(
+						'APP_ERROR_402',
+						array( 'error_text' => $this->language->get('text_task_not_found'))
+					);
 		}
+
+		//remove task without steps
+		if(!$task['steps']){
+			$tm->deleteTask($task_id);
+			$err = new AError('Task runtime error');
+			return $err->toJSONResponse(
+						'APP_ERROR_402',
+						array( 'error_text' => $this->language->get('text_empty_task'))
+					);
+		}
+
+		//check status
+		if(!in_array($task['status'],
+							 array(
+							         $tm::STATUS_RUNNING,
+									 $tm::STATUS_FAILED,
+									 $tm::STATUS_COMPLETED,
+									 $tm::STATUS_INCOMPLETE))
+		){
+			$err = new AError('Task runtime error');
+			return $err->toJSONResponse(
+						'APP_ERROR_402',
+						array( 'error_text' => $this->language->get('text_forbidden_to_restart'))
+					);
+		}
+
+
+
+		//then two scenarios:
+		$restart_all = false;
+		//if some of steps have sign for interruption on fail - restart whole task
+		foreach($task['steps'] as $step){
+			if($step['settings']['interrupt_on_step_fault'] === true){
+				$restart_all = true;
+				break;
+			}
+		}
+		//if task with standalone steps - remove successful steps from task before restart
+		if(!$restart_all){
+			foreach($task['steps'] as &$step){
+				if($step['last_result']==1){
+					$tm->deleteStep($step['step_id']);
+					unset($step);
+				}
+			}
+		}
+		//mark all remained step as ready for run
+		foreach($task['steps'] as $step){
+			$tm->updateStep($step['step_id'], array('status'=> $tm::STATUS_READY));
+		}
+
+		$tm->updateTask($task_id, array(
+											'status' => $tm::STATUS_READY,
+											'start_time' => date('Y-m-d H:i:s')
+											));
+		$this->_run_task($task_id);
 
 
 		//update controller data
 		$this->extensions->hk_UpdateData($this,__FUNCTION__);
 	}
+
 	public function run(){
 		//init controller data
 		$this->extensions->hk_InitData($this,__FUNCTION__);
@@ -154,28 +218,31 @@ class ControllerResponsesListingGridTask extends AController {
 			$tm = new ATaskManager();
 			$task = $tm->getTaskById($this->request->post_or_get('task_id'));
 			//check
-			if($task && $task['status'] == 1){
+			if($task && $task['status'] == $tm::STATUS_READY){
 				$tm->updateTask($task['task_id'], array(
 													'start_time' => date('Y-m-d H:i:s'),
 														));
+				$task_id = $task['task_id'];
 			}
-			$this->_run_task();
+			$this->_run_task($task_id);
 		}else{
 			$this->response->setOutput(AJson::encode(array('result'=> false)));
 		}
-
 
 		//update controller data
 		$this->extensions->hk_UpdateData($this,__FUNCTION__);
 	}
 
-	//
-	private function _run_task(){
+	// run task in separate process
+	private function _run_task($task_id = 0){
 
 		$connect = new AConnect(true);
-		$url = $this->config->get('config_url').'task.php';
+		$url = $this->config->get('config_url').'task.php?mode=html&task_api_key='.$this->config->get('task_api_key');
+		if( $task_id ){
+			$url .= '&task_id='.$task_id;
+		}
 		$connect->getDataHeaders( $url );
+		session_write_close();
 	}
-
 
 }

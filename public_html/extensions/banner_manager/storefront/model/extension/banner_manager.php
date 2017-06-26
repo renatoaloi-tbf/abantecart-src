@@ -5,7 +5,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright © 2011-2016 Belavier Commerce LLC
+  Copyright © 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   License details is bundled with this package in the file LICENSE.txt.
@@ -130,7 +130,7 @@ class ModelExtensionBannerManager extends Model {
 
 		$user_info = array(
 			'user_id' => (is_object($this->user) ? $this->user->getId() : ''),
-			'user_ip' => $this->request->server[ 'REMOTE_ADDR' ],
+			'user_ip' => $this->request->getRemoteIP(),
 			'user_host' => $this->request->server[ 'REMOTE_HOST' ],
 			'rt' => $this->request->get[ 'rt' ]
 		);

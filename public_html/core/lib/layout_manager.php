@@ -5,7 +5,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright © 2011-2016 Belavier Commerce LLC
+  Copyright © 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   License details is bundled with this package in the file LICENSE.txt.
@@ -1746,19 +1746,20 @@ class ALayoutManager{
 			}
 
 			// block manipulation
-			foreach ($layout->blocks->block as $block){
-				if (!$block->block_txt_id){
-					$error_text = 'Error: cannot process block because block_txt_id is empty.';
-					$error = new AError ($error_text);
-					$error->toLog()->toDebug();
-					$this->errors = 1;
-					continue;
+			if($layout->blocks->block) {
+				foreach ($layout->blocks->block as $block) {
+					if (!$block->block_txt_id) {
+						$error_text = 'Error: cannot process block because block_txt_id is empty.';
+						$error = new AError ($error_text);
+						$error->toLog()->toDebug();
+						$this->errors = 1;
+						continue;
+					}
+					$layout->layout_id = $layout_id;
+					//start recursion on all blocks
+					$this->_processBlock($layout, $block);
 				}
-				$layout->layout_id = $layout_id;
-				//start recursion on all blocks
-				$this->_processBlock($layout, $block);
 			}
-
 		} //end of layout manipulation
 		return true;
 	}
@@ -2166,12 +2167,16 @@ class ALayoutManager{
 				}
 			}
 
+			$position = (int)$block->position;
 			foreach ($parent_inst as $par_inst){
-				$sql = "SELECT MAX(position) as maxpos
-						FROM " . $this->db->table("block_layouts") . " 
-						WHERE  parent_instance_id = " . ( int )$par_inst;
-				$result = $this->db->query($sql);
-				$position = $result->row ['maxpos'] + 10;
+				//if no position provided increase by 10 
+				if (!$position){
+					$sql = "SELECT MAX(position) as maxpos
+							FROM " . $this->db->table("block_layouts") . " 
+							WHERE  parent_instance_id = " . (int)$par_inst;
+					$result = $this->db->query($sql);
+					$position = $result->row ['maxpos'] + 10;
+				}
 				$sql = "INSERT INTO " . $this->db->table("block_layouts") . " (layout_id,
 																	block_id,
 																	custom_block_id,

@@ -5,7 +5,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright © 2011-2016 Belavier Commerce LLC
+  Copyright © 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   License details is bundled with this package in the file LICENSE.txt.
@@ -54,7 +54,7 @@ class ControllerApiIndexLogin extends AControllerAPI {
 	private function _validate($username, $password) {
 		if (isset($username) && isset($password) && !$this->user->login($username, $password)) {
 			$this->loadLanguage('common/login');
-			$this->messages->saveNotice("API " . $this->language->get('error_login_message').$this->request->server['REMOTE_ADDR'],$this->language->get('error_login_message_text').$username);
+			$this->messages->saveNotice("API " . $this->language->get('error_login_message').$this->request->getRemoteIP(),$this->language->get('error_login_message_text').$username);
 			return FALSE;			
 		} else {
 			return TRUE;		
@@ -72,4 +72,3 @@ class ControllerApiIndexLogin extends AControllerAPI {
 	}
 	
 }  
-?>

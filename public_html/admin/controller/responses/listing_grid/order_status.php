@@ -5,7 +5,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright © 2011-2016 Belavier Commerce LLC
+  Copyright © 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   License details is bundled with this package in the file LICENSE.txt.
@@ -21,7 +21,7 @@ if (!defined('DIR_CORE') || !IS_ADMIN){
 	header('Location: static_pages/');
 }
 class ControllerResponsesListingGridOrderStatus extends AController{
-
+	public $data = array();
 	public function main(){
 
 		//init controller data
@@ -84,12 +84,11 @@ class ControllerResponsesListingGridOrderStatus extends AController{
 			);
 			$i++;
 		}
-
+		$this->data['response'] = $response;
 		//update controller data
 		$this->extensions->hk_UpdateData($this, __FUNCTION__);
-
 		$this->load->library('json');
-		$this->response->setOutput(AJson::encode($response));
+		$this->response->setOutput(AJson::encode($this->data['response']));
 	}
 
 	public function update(){
@@ -137,12 +136,8 @@ class ControllerResponsesListingGridOrderStatus extends AController{
 							$this->model_localisation_order_status->editOrderStatus($id, array ('order_status' => $this->request->post['order_status'][$id]));
 						}
 					}
-
 				break;
-
 			default:
-				//print_r($this->request->post);
-
 		}
 
 		//update controller data

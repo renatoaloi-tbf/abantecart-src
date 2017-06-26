@@ -5,7 +5,7 @@
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
 
-  Copyright © 2011-2016 Belavier Commerce LLC
+  Copyright © 2011-2017 Belavier Commerce LLC
 
   This source file is subject to Open Software License (OSL 3.0)
   License details is bundled with this package in the file LICENSE.txt.
@@ -73,7 +73,7 @@ class ControllerPagesCheckoutShipping extends AController{
 			unset($this->session->data['shipping_methods']);
 
 			$this->tax->setZone($this->session->data['country_id'], $this->session->data['zone_id']);
-			$this->redirect($this->html->getSecureURL($payment_rt));
+			$this->redirect($this->html->getSecureURL($payment_rt, "&back=cart"));
 		}
 
 		//If no shipping address is set yet, use default
@@ -153,7 +153,7 @@ class ControllerPagesCheckoutShipping extends AController{
 				if ($autoselect){
 					if (sizeof($only_method[$method_name]['quote']) == 1){
 						$this->session->data['shipping_method'] = current($only_method[$method_name]['quote']);
-						$this->redirect($this->html->getSecureURL($payment_rt));
+						$this->redirect($this->html->getSecureURL($payment_rt,"&back=cart"));
 					}
 				}
 			}
@@ -205,15 +205,18 @@ class ControllerPagesCheckoutShipping extends AController{
 		$form = new AForm();
 		$form->setForm(array ('form_name' => 'shipping'));
 		$this->data['form']['form_open'] = $form->getFieldHtml(
-				array ('type'   => 'form',
-				       'name'   => 'shipping',
-				       'action' => $this->html->getSecureURL($checkout_rt)));
+				array ( 'type'   => 'form',
+				        'name'   => 'shipping',
+				        'action' => $this->html->getSecureURL($checkout_rt),
+                        'csrf' => true
+                )
+        );
 
 		$this->data['shipping_methods'] = $this->session->data['shipping_methods'] ? $this->session->data['shipping_methods'] : array ();
 		$shipping = $this->session->data['shipping_method']['id'];
 		if ($this->data['shipping_methods']){
 			foreach ($this->data['shipping_methods'] as $k => $v){
-				if ($v['quote']){
+				if ($v['quote'] && is_array($v['quote'])){
 					foreach ($v['quote'] as $key => $val){
 						//check if we have only one method and select by default if was selected before
 						$selected = false;
@@ -276,7 +279,9 @@ class ControllerPagesCheckoutShipping extends AController{
 	}
 
 	public function validate(){
-		if (!isset($this->request->post['shipping_method'])){
+        if (!$this->csrftoken->isTokenValid()) {
+			$this->error['warning'] = $this->language->get('error_unknown');
+        } else if (!isset($this->request->post['shipping_method'])){
 			$this->error['warning'] = $this->language->get('error_shipping');
 		} else{
 			$shipping = explode('.', $this->request->post['shipping_method']);
