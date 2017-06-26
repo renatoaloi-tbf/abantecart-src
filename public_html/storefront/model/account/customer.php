@@ -648,7 +648,7 @@ class ModelAccountCustomer extends Model {
 			}
 		}
 
-		$this->extensions->hk_ValidateData($this);
+		$this->extensions->hk_ValidateData($this, __FUNCTION__);
 
     	return $this->error;
 	}
@@ -708,7 +708,7 @@ class ModelAccountCustomer extends Model {
 			}
 		}
 
-		$this->extensions->hk_ValidateData($this);
+		$this->extensions->hk_ValidateData($this, __FUNCTION__);
 
     	return $this->error;
 	}
@@ -776,7 +776,7 @@ class ModelAccountCustomer extends Model {
 			}
 		}
 
-		$this->extensions->hk_ValidateData($this);
+		$this->extensions->hk_ValidateData($this, __FUNCTION__);
 
     	return $this->error;
 	}
